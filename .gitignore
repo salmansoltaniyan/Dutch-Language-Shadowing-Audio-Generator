@@ -1,0 +1,20 @@
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# Project generated audio files & folders
+*.mp3
+*.wav
+src/output/
+output/
+
+# IDE & Editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
