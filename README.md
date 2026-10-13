@@ -6,7 +6,7 @@ A Python tool to generate structured, high-quality audio files for language shad
 
 - **Adaptive Silence**: Pauses automatically scale based on the length of each word or sentence to allow sufficient shadowing time.
 - **Dual Modes**:
-  - **Normal Mode**: Word, sentence, and translation combinations with customizable order, voice gender, and repeat counts.
+  - **Normal Mode**: Word, sentence, and translation combinations with customizable order, voice gender, repeat counts, and per-segment speed control (e.g. 0.8x for slower practice).
   - **Dialog Mode**: Multi-turn realistic dialogues where each speaker has a distinct voice.
 - **High Compatibility Audio**: Outputs normalized stereo MP3 files (44.1 kHz, 128 kbps).
 - **Flexible Input**: Inline CSV configuration without needing external spreadsheet files.
@@ -37,3 +37,4 @@ python src/word_sentences_meaning_shadowing.py
 ```
 
 Generated audio files will be saved in `src/output/` (individual items numbered `001.mp3`, `002.mp3`, etc., alongside a merged `full_lesson.mp3`).
+
