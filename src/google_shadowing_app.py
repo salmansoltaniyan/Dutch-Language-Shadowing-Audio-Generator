@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import csv
-import io
 import os
+import re
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -23,7 +23,7 @@ if sys.platform == "win32":
 
 
 # ===========================================================================
-# SHARED CONFIGURATION (Applies to BOTH Normal Mode and Dialog Mode)
+# SHARED SETTINGS & PATHS
 # ===========================================================================
 
 BASE_DIR   = Path(__file__).resolve().parent
@@ -46,240 +46,191 @@ OUTPUT_SAMPLE_RATE = 44100   # Hz (standard CD quality)
 OUTPUT_CHANNELS    = 2       # 1=mono, 2=stereo
 OUTPUT_BITRATE     = "192k"  # High quality MP3 bitrate
 
-# Choose which mode to run (True = Dialog Mode, False = Normal Mode)
-DIALOG_MODE = False
-
 # Clean up individual chunk/row files (001.mp3, 002.mp3, ...) and temp cache at the end.
 # True  = Keep ONLY the complete final lesson file ('full_lesson_google.mp3'), delete all chunks.
 # False = Keep all individual row files (001.mp3, 002.mp3, ...) for separate playback.
 CLEANUP_CHUNK_FILES = True
 
 
-
 # ===========================================================================
-# VOICE OPTIONS GUIDE (راهنمای انتخاب صداهای هلندی و فارسی)
+# VOICE PRESETS & SPEAKER CONFIGURATION
 # ===========================================================================
-# 
-# 1. DUTCH VOICES (Google Cloud Text-to-Speech):
+#
+# Supported Languages:
+#   - "dutch"   : Powered by Google Cloud Chirp 3: HD
+#   - "english" : Powered by Google Cloud Chirp 3: HD
+#   - "german"  : Powered by Google Cloud Chirp 3: HD
+#   - "persian" : Powered by Microsoft Edge-TTS Neural
+#
+# Available voice presets for each language:
+#   "male1", "male2", "female1", "female2" (or use any exact voice name directly)
 # ---------------------------------------------------------------------------
-# [A] Chirp 3: HD (Google's latest High-Definition Generative AI voices):
-#     - Male:
-#         "nl-NL-Chirp3-HD-Fenrir"       (Deep, warm, highly natural - Recommended)
-#         "nl-NL-Chirp3-HD-Algenib"      (Clear, friendly, conversational)
-#         "nl-NL-Chirp3-HD-Achird"       (Neutral, balanced tone)
-#         "nl-NL-Chirp3-HD-Enceladus"    (Firm, professional)
-#         "nl-NL-Chirp3-HD-Orus"         (Young adult tone)
-#     - Female:
-#         "nl-NL-Chirp3-HD-Aoede"        (Clear, bright, articulate - Recommended)
-#         "nl-NL-Chirp3-HD-Gacrux"       (Warm, gentle, natural cadence)
-#         "nl-NL-Chirp3-HD-Despina"      (Expressive, conversational)
-#         "nl-NL-Chirp3-HD-Zephyr"       (Modern, energetic)
-#         "nl-NL-Chirp3-HD-Leda"         (Soft, calm)
-#
-# [B] WaveNet (DeepMind classical neural voices):
-#     - Male:   "nl-NL-Wavenet-G"
-#     - Female: "nl-NL-Wavenet-F"
-#
-# [C] Standard (Basic synthesized voices):
-#     - Male:   "nl-NL-Standard-G"
-#     - Female: "nl-NL-Standard-F"
-#
-# [D] Belgian Dutch (Flemish / nl-BE) Options:
-#     - Male:   "nl-BE-Chirp3-HD-Achird", "nl-BE-Wavenet-D"
-#     - Female: "nl-BE-Chirp3-HD-Aoede",  "nl-BE-Wavenet-C"
-#
-# 2. PERSIAN VOICES (Microsoft Edge-TTS Neural):
-# ---------------------------------------------------------------------------
-# Note: Google Cloud TTS does not provide standard Persian (fa-IR) voices.
-# We seamlessly use Microsoft's ultra-natural Neural voices for Persian:
-#     - Female: "fa-IR-DilaraNeural"     (Very natural, calm, pleasant)
-#     - Male:   "fa-IR-FaridNeural"      (Deep, clear, native Persian)
-# ===========================================================================
 
-# Available TTS voices mapping: (language, gender) -> voice_name
-VOICES = {
-    ("dutch",   "male"):   "nl-NL-Chirp3-HD-Fenrir",  # Google Chirp 3: HD Male
-    ("dutch",   "female"): "nl-NL-Chirp3-HD-Aoede",   # Google Chirp 3: HD Female
-    ("persian", "male"):   "fa-IR-FaridNeural",       # Edge-TTS Neural Male
-    ("persian", "female"): "fa-IR-DilaraNeural",      # Edge-TTS Neural Female
+VOICE_PRESETS = {
+    "dutch": {
+        "male1":   "nl-NL-Chirp3-HD-Fenrir",   # Deep, warm, highly natural (Recommended)
+        "male2":   "nl-NL-Chirp3-HD-Algenib",  # Clear, friendly, conversational
+        "female1": "nl-NL-Chirp3-HD-Aoede",    # Clear, articulate, educational (Recommended)
+        "female2": "nl-NL-Chirp3-HD-Gacrux",   # Warm, gentle, conversational
+    },
+    "english": {
+        "male1":   "en-US-Chirp3-HD-Fenrir",
+        "male2":   "en-US-Chirp3-HD-Algenib",
+        "female1": "en-US-Chirp3-HD-Aoede",
+        "female2": "en-US-Chirp3-HD-Gacrux",
+    },
+    "german": {
+        "male1":   "de-DE-Chirp3-HD-Fenrir",
+        "male2":   "de-DE-Chirp3-HD-Algenib",
+        "female1": "de-DE-Chirp3-HD-Aoede",
+        "female2": "de-DE-Chirp3-HD-Gacrux",
+    },
+    "persian": {
+        "female1": "fa-IR-DilaraNeural",       # Soft, clear, native Persian
+        "male1":   "fa-IR-FaridNeural",        # Deep, articulate Persian
+        "female2": "fa-IR-DilaraNeural",
+        "male2":   "fa-IR-FaridNeural",
+    },
+}
+
+# ---------------------------------------------------------------------------
+# SPEAKERS CONFIGURATION
+#
+# Configure each tag ('a', 'b', 'c', ...) used in LESSON_DATA.
+#
+# Parameters:
+#   language : "dutch" | "english" | "german" | "persian"
+#   voice    : "male1" | "male2" | "female1" | "female2" (or exact voice name)
+#   repeats  : how many times this segment is repeated (e.g. 1, 2, 3)
+#   speed    : playback speed multiplier (e.g. 0.85, 0.95, 1.0)
+# ---------------------------------------------------------------------------
+
+SPEAKERS = {
+    "a": {
+        "language": "dutch",
+        "voice":    "male1",   # Google Chirp 3: HD Male (Fenrir)
+        "repeats":  1,
+        "speed":    0.85,
+    },
+    "b": {
+        "language": "dutch",
+        "voice":    "female1", # Google Chirp 3: HD Female (Aoede)
+        "repeats":  2,         # Repeated twice for shadowing practice
+        "speed":    0.95,
+    },
+    "d": {
+        "language": "dutch",
+        "voice":    "male2", # Google Chirp 3: HD Male (Algenib)
+        "repeats":  2,         # Repeated twice for shadowing practice
+        "speed":    0.95,
+    },
+    "c": {
+        "language": "persian",
+        "voice":    "female1", # Edge-TTS Persian Female (Dilara)
+        "repeats":  1,
+        "speed":    1.00,
+    },
 }
 
 
 # ===========================================================================
-# NORMAL MODE CONFIGURATION
+# LESSON DATA (Unified Format)
 # ===========================================================================
-
-# ---------------------------------------------------------------------------
-# CSV format:
-# 1. First row (Header) must strictly be: dutch,dutch,persian
-# 2. Column 1: The Dutch word or phrase (include article 'de' or 'het' for nouns).
-# 3. Column 2: A natural, practical example sentence in Dutch.
-# 4. Column 3: Natural Persian translation of word/sentence.
-# ---------------------------------------------------------------------------
-CSV_DATA = """
-dutch,dutch,persian
-uitstekend,Ik ben heel blij; het gaat uitstekend.,عالی
-fantastisch,De zon schijnt en het feest is fantastisch.,فوق‌العاده
-niet zo goed,Ik ben een beetje ziek; het gaat niet zo goed.,نه چندان خوب
-Heb je zin om,Heb je honger? Heb je zin om pizza te eten?,میلی داری به
-Ga je mee,Ik ga naar de stad; ga je mee?,همراه من می‌آیی
-Goed idee,Ja leuk! Dat is een goed idee.,ایده خوب
-Dat vind ik niet leuk,Nee stop! Dat vind ik niet leuk.,دوست ندارم
-het lokaal,De leraar staat voor de klas in het lokaal.,کلاس
-roepen,Hij staat ver weg; ik moet hard roepen.,صدا زدن
-spellen,Ik weet niet hoe je dat schrijft; kun je het spellen?,هجی کردن
-geven,Morgen is jouw feest en ik wil een cadeau geven.,دادن
-de ouders,Mijn vader en moeder zijn mijn ouders.,والدین
-de activiteit,Zwemmen en fietsen; welke activiteit vind je leuk?,فعالیت
-het moment,Ik kom zo; wacht een moment.,لحظه
-nemen,Wil je thee drinken of wil je koffie nemen?,برداشتن
-de collega,Wij werken samen in één kantoor; hij is mijn collega.,همکار
-automatisch,Je hoeft niet te drukken; de deur gaat automatisch.,خودکار
-de diensten,De bank helpt mensen met geld en andere diensten.,خدمات
-het Talencentrum,Ik wil Nederlands leren; ik ga naar het Talencentrum.,مرکز زبان
-bezoeken,Opa is ziek; wij gaan hem bezoeken.,دیدار کردن
-de vraag,Ik weet het antwoord niet; ik stel een vraag.,سؤال
-beantwoord,Ik stuur een e-mail en hij heeft beantwoord.,پاسخ داده
-raadplegen,Voor meer info moet je de website raadplegen.,مراجعه کردن
-ons best doen,Het examen is moeilijk maar wij doen ons best.,تلاش کردن
-spoedig,Niet wachten tot morgen; kom zo spoedig mogelijk.,سریع
-het secretariaat,Voor jouw studentenkaart ga je naar het secretariaat.,دبیرخانه
-de openingstijden,De winkel is open van 9 tot 5; dat zijn de openingstijden.,ساعات کاری
-de werkdag,Zaterdag is weekend maar vandaag is een werkdag.,روز کاری
-bereikbaar,Mijn telefoon is uit; ik ben niet bereikbaar.,در دسترس
-wil je graag doen,Heb je vrije tijd? Wat wil je graag doen?,دوست داری انجام بدی
-kom je samen mee,Ik ga niet alleen; kom je samen mee?,همراه من می‌آیی
-""".strip()
-
-# ---------------------------------------------------------------------------
-# SEGMENT_ORDER — used in normal mode only (ignored in dialog mode).
 #
-# Each entry is a tuple with 3 or 4 elements:
-#   (column_index, gender, repeats[, speed])
+# Format:
+# Prefix each phrase/sentence with a speaker label ('a:', 'b:', 'c:', etc.).
+# Multiple phrases and speakers can appear in a single row or across lines.
 #
-#   column_index : 1-based column position in the CSV (1, 2, 3, ...)
-#   gender       : "male" or "female"
-#   repeats      : how many times to play this segment
-#   speed        : (Optional) speed multiplier. Default is 1.0 (normal).
-#                  Examples: 0.8 (slower), 1.2 (faster), "0.85x", "-15%", etc.
+# Examples:
+#   1. Single row vocabulary + sentence + translation:
+#      a: uitstekend b: Het gaat uitstekend met mij. c: عالی
+#
+#   2. Multiple phrases for the same speaker:
+#      a: uitstekend b: ik ben heel blij b: het gaat uitstekend c: عالی
+#
+#   3. Dialogues across separate rows:
+#      a: Heb je het artikel gelezen over echte Hollandse winterkost?
+#      b: Ja in de studentenkeukens, wat maken ze deze week?
 # ---------------------------------------------------------------------------
-SEGMENT_ORDER = [
-    (1, "male",   1, 0.85),  # Dutch word, male voice, 1 repeat, 0.85x speed
-    (2, "male",   2, 0.95),  # Dutch sentence, male voice, 2 repeats (shadowing), 0.95x
-    (3, "female", 1, 1.00),  # Persian translation, female voice, 1 repeat, 1.0x speed
-]
 
-
-# ===========================================================================
-# DIALOG MODE CONFIGURATION
-# ===========================================================================
-
-# How many times every dialog sentence is repeated
-DIALOG_REPEATS = 1
-
-# Voices mapped to speakers by row:
-#   Speaker 'a' = Google Chirp3-HD Male (Fenrir)
-#   Speaker 'b' = Google Chirp3-HD Female (Aoede)
-#   Speaker 'c' = Google Chirp3-HD Male (Algenib)
-DIALOG_VOICES = {
-    "a": "nl-NL-Chirp3-HD-Fenrir",
-    "b": "nl-NL-Chirp3-HD-Aoede",
-    "c": "nl-NL-Chirp3-HD-Algenib",
-}
-
-# ---------------------------------------------------------------------------
-# DIALOG_CSV_DATA — used only when DIALOG_MODE = True.
-# ---------------------------------------------------------------------------
-DIALOG_CSV_DATA = """
-a: Heb je het artikel gelezen, over echte Hollandse winterkost?
-b: Ja in de studentenkeukens, wat maken ze deze week?
-a: Deze week maken ze, stamppot andijvie met spekjes.
-b: Klinkt goed, wie is de kok van de avond?
-a: Kok van de avond is Tim, een student aan de Hanzehogeschool.
-b: Kookt hij alleen, of samen met zijn studiegenoten?
-a: Hij kookt samen met Jorik en Willard, op zijn studentenkamer.
-b: Houden ze allemaal, van deze warme stamppot?
-a: Nee Jorik en Willard, houden niet zo van stamppot.
-b: Wat eten zij dan, als hoofdgerecht vanavond?
-a: Op hun borden ligt pasta, pasta van gisteren met rookworst.
-b: Wat heb je precies nodig, voor dit stamppot recept?
-a: Je hebt twee kilo aardappels, en vijfhonderd gram andijvie nodig.
-b: Moet er ook vlees in, of is het vegetarisch?
-a: Je gebruikt tweehonderdvijftig gram spekjes, en één rookworst.
-b: En voor de puree, wat gebruiken we daarvoor?
-a: Een beetje boter en melk, en wat peper en zout.
-b: Oh we vergeten nog, de tomaten en de kaas.
-a: Klopt driehonderd gram kaas, en driehonderd gram cherrytomaten.
-b: Hoe begin je, met het maken van dit gerecht?
-a: Eerst schil je de aardappels, en kook je ze in twintig minuten gaar.
-b: Tim schilt voor de eerste keer, twee kilo aardappels in zijn leven!
-a: Dat is inderdaad veel werk, intussen moet je de worst koken.
-b: En de rest van de groenten, wat doen we daarmee?
-a: Maak de andijvie schoon, en snijd de tomaten in stukjes.
-b: Daarna bak je de spekjes, en stamp je de aardappels tot puree.
-a: Roer de melk erdoor, en voeg de andijvie en spekjes toe.
-b: Breng het op smaak, met zout en peper.
-a: Morgen gaan Tim en Jorik, op studiereis naar Noorwegen.
-b: Het regent daar veel, en het is daar erg koud.
-a: Brr neem dan gauw nog een hap, van de warme stamppot!
-b: Zeker weten, eet smakelijk allemaal!
+LESSON_DATA = """
+a: uitstekend b: Het gaat uitstekend met mij.  b: Wij hebben een fantastisch weekend gehad d: Het gaat vandaag niet zo goed met hem. c: عالی
+a: fantastisch b: Wij hebben een fantastisch weekend gehad. c: فوق‌العاده
+a: niet zo goed b: Het gaat vandaag niet zo goed met hem. c: نه چندان خوب
 """.strip()
 
 
 # ===========================================================================
-# CSV Parsers
+# Parser & Audio Helpers
 # ===========================================================================
 
-def load_normal_csv() -> tuple[list[str], list[list[str]]]:
-    """Return (headers, data_rows) for normal mode."""
-    reader    = csv.reader(io.StringIO(CSV_DATA))
-    all_rows  = list(reader)
-    if not all_rows:
-        raise ValueError("CSV_DATA is empty.")
+def parse_lesson_lines(raw_text: str) -> list[list[tuple[str, str]]]:
+    """
+    Parse unified lesson lines into lists of (speaker_tag, text) segments.
+    Example line:
+      'a: uitstekend b: ik ben heel blij b: het gaat uitstekend c: عالی'
+    Becomes:
+      [('a', 'uitstekend'), ('b', 'ik ben heel blij'), ('b', 'het gaat uitstekend'), ('c', 'عالی')]
+    """
+    parsed_rows = []
+    pattern = re.compile(r'(?:^|\s+)([a-zA-Z0-9_]+):\s*')
 
-    headers   = [h.strip().lower() for h in all_rows[0]]
-    data_rows = [r for r in all_rows[1:] if any(c.strip() for c in r)]
-
-    allowed = {"dutch", "persian"}
-    bad = [h for h in headers if h not in allowed]
-    if bad:
-        raise ValueError(f"Invalid header(s): {bad}. Headers must be 'dutch' or 'persian' only.")
-    return headers, data_rows
-
-
-def load_dialog_csv() -> list[tuple[str, list[str]]]:
-    """Return list of (speaker_id, sentences) for dialog mode."""
-    reader = csv.reader(io.StringIO(DIALOG_CSV_DATA))
-    speaker_rows = []
-
-    for row in reader:
-        clean_cells = [c.strip() for c in row if c.strip()]
-        if not clean_cells:
+    for line_idx, raw_line in enumerate(raw_text.strip().splitlines(), start=1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
             continue
 
-        first_cell = clean_cells[0]
-        if ":" in first_cell:
-            prefix, first_text = first_cell.split(":", 1)
-            speaker_id = prefix.strip().lower()
-            clean_cells[0] = first_text.strip()
-        else:
-            raise ValueError(f"Row must start with a speaker label like 'a:' or 'b:'. Got: '{first_cell}'")
+        matches = list(pattern.finditer(line))
+        if not matches:
+            continue
 
-        sentences = [c for c in clean_cells if c]
-        speaker_rows.append((speaker_id, sentences))
+        segments: list[tuple[str, str]] = []
+        for i, m in enumerate(matches):
+            tag = m.group(1).lower()
+            start_pos = m.end()
+            end_pos = matches[i + 1].start() if i + 1 < len(matches) else len(line)
+            segment_text = line[start_pos:end_pos].strip()
+            if segment_text:
+                segments.append((tag, segment_text))
 
-    if not speaker_rows:
-        raise ValueError("DIALOG_CSV_DATA is empty.")
+        if segments:
+            parsed_rows.append(segments)
 
-    return speaker_rows
+    return parsed_rows
 
 
-# ===========================================================================
-# Speed / Rate Parsers
-# ===========================================================================
+def resolve_speaker(tag: str) -> tuple[str, str, int, float]:
+    """Return (language, voice_name, repeats, speed) for a given speaker tag."""
+    if tag not in SPEAKERS:
+        raise ValueError(
+            f"Speaker tag '{tag}' not found in SPEAKERS config. Configured tags: {list(SPEAKERS.keys())}"
+        )
+
+    cfg = SPEAKERS[tag]
+    if isinstance(cfg, (list, tuple)):
+        lang = str(cfg[0]).lower()
+        v_key = str(cfg[1])
+        repeats = int(cfg[2])
+        speed = float(cfg[3]) if len(cfg) > 3 else 1.0
+    elif isinstance(cfg, dict):
+        lang = str(cfg.get("language", "dutch")).lower()
+        v_key = str(cfg.get("voice", "male1"))
+        repeats = int(cfg.get("repeats", 1))
+        speed = float(cfg.get("speed", 1.0))
+    else:
+        raise ValueError(f"Invalid configuration format for speaker '{tag}': {cfg}")
+
+    # Resolve preset name to exact TTS voice name
+    if lang in VOICE_PRESETS and v_key in VOICE_PRESETS[lang]:
+        voice_name = VOICE_PRESETS[lang][v_key]
+    else:
+        voice_name = v_key
+
+    return lang, voice_name, repeats, speed
+
 
 def parse_speed_to_float(speed: float | int | str = 1.0) -> float:
-    """Convert speed format (e.g. 0.8, '0.8x', '-20%') to float multiplier for Google TTS (e.g. 0.8)."""
+    """Convert speed input (e.g. 0.85, '0.85x', '-15%') to float multiplier."""
     if isinstance(speed, str):
         s = speed.strip().lower()
         if s.endswith('%'):
@@ -295,14 +246,14 @@ def parse_speed_to_float(speed: float | int | str = 1.0) -> float:
 
 
 def parse_speed_to_rate_str(speed: float | int | str = 1.0) -> str:
-    """Convert speed format to edge-tts rate string (e.g. '-20%', '+10%')."""
+    """Convert speed input to edge-tts rate string (e.g. '-15%', '+10%')."""
     val = parse_speed_to_float(speed)
     pct = round((val - 1.0) * 100)
     return f"{pct:+d}%"
 
 
 # ===========================================================================
-# TTS Synthesis Functions (Google Cloud & Edge-TTS)
+# TTS Engines (Google Cloud Chirp 3: HD + Microsoft Edge-TTS)
 # ===========================================================================
 
 def synthesize_google_tts_sync(text: str, voice_name: str, speed_float: float, filepath: Path) -> None:
@@ -312,8 +263,9 @@ def synthesize_google_tts_sync(text: str, voice_name: str, speed_float: float, f
             "Google API key not found! Please paste your key into 'google_api_key.txt' in the project root."
         )
 
-    # Determine language code from voice name prefix (e.g. "nl-BE" or "nl-NL")
-    lang_code = "nl-BE" if voice_name.startswith("nl-BE") else "nl-NL"
+    # Derive BCP-47 language code from voice name (e.g. 'nl-NL', 'en-US', 'de-DE')
+    parts = voice_name.split("-")
+    lang_code = f"{parts[0]}-{parts[1]}" if len(parts) >= 2 else "nl-NL"
 
     url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={GOOGLE_API_KEY}"
     payload = {
@@ -344,28 +296,27 @@ def synthesize_google_tts_sync(text: str, voice_name: str, speed_float: float, f
 
 async def make_audio(
     text: str,
+    language: str,
     voice: str,
     filepath: Path,
-    speed: float | int | str = 1.0,
+    speed: float = 1.0,
     max_retries: int = 3,
 ) -> None:
     """
-    Unified TTS synthesizer:
-    - If voice is Google Cloud Dutch (starts with 'nl-'): calls Google Cloud TTS.
-    - If voice is Persian or Edge-TTS (starts with 'fa-'): calls Microsoft Edge-TTS.
+    Unified speech synthesizer:
+    - If language is Persian (or voice starts with 'fa-'): uses Microsoft Edge-TTS.
+    - If language is Dutch, English, German (or voice starts with Google prefix): uses Google Cloud Chirp 3: HD.
     """
     speed_float = parse_speed_to_float(speed)
     rate_str    = parse_speed_to_rate_str(speed)
-
-    is_google = voice.startswith("nl-")
+    is_persian  = language == "persian" or voice.startswith("fa-")
 
     for attempt in range(1, max_retries + 1):
         try:
-            if is_google:
-                # Run synchronous requests call in thread pool to keep asyncio responsive
-                await asyncio.to_thread(synthesize_google_tts_sync, text, voice, speed_float, filepath)
-            else:
+            if is_persian:
                 await edge_tts.Communicate(text, voice, rate=rate_str).save(str(filepath))
+            else:
+                await asyncio.to_thread(synthesize_google_tts_sync, text, voice, speed_float, filepath)
             return
         except Exception as e:
             if attempt == max_retries:
@@ -389,133 +340,6 @@ def normalize_and_export(audio: AudioSegment, path: Path) -> None:
     audio.export(str(path), format="mp3", bitrate=OUTPUT_BITRATE)
 
 
-def validate_order(headers: list[str]) -> None:
-    """Check that every SEGMENT_ORDER entry references a valid column."""
-    for item in SEGMENT_ORDER:
-        if len(item) == 3:
-            col_1based, gender, repeats = item
-            speed = 1.0
-        elif len(item) == 4:
-            col_1based, gender, repeats, speed = item
-        else:
-            raise ValueError(
-                f"Each SEGMENT_ORDER entry must have 3 or 4 elements: (col, gender, repeats[, speed]). Got: {item}"
-            )
-
-        idx = col_1based - 1
-        if idx < 0 or idx >= len(headers):
-            raise ValueError(
-                f"SEGMENT_ORDER references col{col_1based}, but CSV only has {len(headers)} column(s)."
-            )
-        lang = headers[idx]
-        if gender not in ("male", "female"):
-            raise ValueError(f"Gender must be 'male' or 'female', got '{gender}'.")
-        if (lang, gender) not in VOICES:
-            raise ValueError(f"No voice configured for lang='{lang}', gender='{gender}'.")
-        parse_speed_to_float(speed)
-
-
-# ===========================================================================
-# Normal Mode Builder
-# ===========================================================================
-
-async def build_row_normal(
-    row_index: int,
-    cells:     list[str],
-    headers:   list[str],
-    tmp_dir:   Path,
-) -> AudioSegment:
-    """Normal mode: synthesize audio per SEGMENT_ORDER with caching and adaptive pauses."""
-    cache: dict[tuple[int, str, float], AudioSegment] = {}
-
-    for item in SEGMENT_ORDER:
-        col_1based = item[0]
-        gender     = item[1]
-        repeats    = item[2]
-        speed      = item[3] if len(item) > 3 else 1.0
-        speed_val  = parse_speed_to_float(speed)
-
-        col_idx = col_1based - 1
-        key     = (col_idx, gender, speed_val)
-        if key in cache:
-            continue
-
-        lang  = headers[col_idx]
-        text  = cells[col_idx].strip() if col_idx < len(cells) else ""
-        voice = VOICES[(lang, gender)]
-
-        speed_tag = f"_{int(speed_val * 100)}" if speed_val != 1.0 else ""
-        path      = tmp_dir / f"row{row_index:03d}_col{col_1based}_{gender}{speed_tag}.mp3"
-
-        provider = "Google" if voice.startswith("nl-") else "Edge"
-        print(f"  [TTS - {provider}] col{col_1based} {lang} ({gender}, ×{repeats}, speed={speed_val}x): {text}")
-
-        if not text:
-            seg = AudioSegment.silent(duration=500)
-        else:
-            if not (path.exists() and path.stat().st_size > 0):
-                await make_audio(text, voice, path, speed=speed_val)
-                await asyncio.sleep(0.2)
-            else:
-                print(f"    [Cache] Using cached audio for row {row_index:03d} col {col_1based}")
-            seg = AudioSegment.from_mp3(str(path))
-
-        cache[key] = seg
-
-    result = AudioSegment.empty()
-    for item in SEGMENT_ORDER:
-        col_1based = item[0]
-        gender     = item[1]
-        repeats    = item[2]
-        speed      = item[3] if len(item) > 3 else 1.0
-        speed_val  = parse_speed_to_float(speed)
-
-        seg   = cache[(col_1based - 1, gender, speed_val)]
-        pause = adaptive_silence(seg)
-        for _ in range(repeats):
-            result += seg + pause
-
-    return result
-
-
-# ===========================================================================
-# Dialog Mode Builder
-# ===========================================================================
-
-async def build_dialog_turn(
-    turn_index: int,
-    speaker_id: str,
-    text: str,
-    tmp_dir: Path,
-) -> AudioSegment:
-    """Build audio for a single sentence in Dialog mode."""
-    if speaker_id not in DIALOG_VOICES:
-        raise ValueError(
-            f"Speaker '{speaker_id}' not found in DIALOG_VOICES. Available: {list(DIALOG_VOICES.keys())}"
-        )
-
-    voice = DIALOG_VOICES[speaker_id]
-    path  = tmp_dir / f"turn{turn_index:03d}_{speaker_id}.mp3"
-
-    provider = "Google" if voice.startswith("nl-") else "Edge"
-    print(f"  [TTS - {provider}] turn {turn_index:02d} | speaker '{speaker_id}' (×{DIALOG_REPEATS}): {text}")
-
-    if not (path.exists() and path.stat().st_size > 0):
-        await make_audio(text, voice, path)
-        await asyncio.sleep(0.2)
-    else:
-        print(f"    [Cache] Using cached audio for turn {turn_index:02d}")
-
-    seg   = AudioSegment.from_mp3(str(path))
-    pause = adaptive_silence(seg)
-
-    result = AudioSegment.empty()
-    for _ in range(DIALOG_REPEATS):
-        result += seg + pause
-
-    return result
-
-
 def clean_previous_outputs(directory: Path) -> None:
     """Clean up previously generated MP3/WAV files and temporary cache at startup."""
     if not directory.exists():
@@ -535,7 +359,6 @@ def clean_previous_outputs(directory: Path) -> None:
             pass
     for sub in [directory / "_google_tmp", directory / "_tmp", directory / "_google_cache", directory / "_gemini_tmp"]:
         if sub.exists():
-            import shutil
             try:
                 shutil.rmtree(sub)
                 removed_count += 1
@@ -546,109 +369,104 @@ def clean_previous_outputs(directory: Path) -> None:
 
 
 # ===========================================================================
-# Main Lesson Builder
+# Lesson Builder
 # ===========================================================================
 
 async def build_lesson() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Clean up old files from previous runs
+    # 1. Clean up old files from previous runs
     clean_previous_outputs(OUTPUT_DIR)
 
     tmp_dir = OUTPUT_DIR / "_google_tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
-
-    # API key check
+    # 2. Check API key
     if not GOOGLE_API_KEY:
         print("\n[ERROR] Google API key was not found!")
         print("Please paste your API key into 'google_api_key.txt' in the project root folder.")
         return
 
-    if DIALOG_MODE:
-        speaker_rows = load_dialog_csv()
+    # 3. Parse input data
+    rows = parse_lesson_lines(LESSON_DATA)
+    if not rows:
+        print("[ERROR] LESSON_DATA is empty or no valid lines were found.")
+        return
 
-        print("=" * 65)
-        print("Mode: DIALOG (Google Cloud Dutch Voices)")
-        print("Speakers & Sentences:")
-        for speaker_id, sentences in speaker_rows:
-            voice_name = DIALOG_VOICES.get(speaker_id, "UNKNOWN")
-            print(f"  Speaker '{speaker_id}' ({voice_name}): {len(sentences)} sentence(s)")
-        print(f"Total speaker rows: {len(speaker_rows)}")
-        print(f"Repeats per sentence: ×{DIALOG_REPEATS}")
-        print("=" * 65)
+    print("=" * 65)
+    print("      Language Shadowing App (Unified Google Chirp 3: HD + Edge-TTS)")
+    print("=" * 65)
+    print("Configured Speakers:")
+    for tag, cfg in SPEAKERS.items():
+        lang, voice, repeats, speed = resolve_speaker(tag)
+        provider = "Edge-TTS" if lang == "persian" else "Google Chirp"
+        print(f"  [{tag}] -> {lang.title():7s} | {voice} (×{repeats}, speed={speed}x) [{provider}]")
 
-        all_segments: list[AudioSegment] = []
-        generated_row_files: list[Path] = []
-        turn_counter = 1
+    print(f"\nTotal lesson units to process: {len(rows)}")
+    print("=" * 65)
 
-        for row_idx, (speaker_id, sentences) in enumerate(speaker_rows, start=1):
-            print(f"\nRow {row_idx}/{len(speaker_rows)} (Speaker '{speaker_id}'):")
-            row_audio = AudioSegment.empty()
+    all_segments: list[AudioSegment] = []
+    generated_row_files: list[Path] = []
+    global_cache: dict[tuple[str, str, float], AudioSegment] = {}
 
-            for text in sentences:
-                turn_seg = await build_dialog_turn(turn_counter, speaker_id, text, tmp_dir)
-                row_audio += turn_seg
-                turn_counter += 1
+    start_time = time.time()
 
-            all_segments.append(row_audio)
-            out_path = OUTPUT_DIR / f"{row_idx:03d}.mp3"
-            normalize_and_export(row_audio, out_path)
-            generated_row_files.append(out_path)
-            print(f"  Saved row: {out_path.name} ({out_path.stat().st_size // 1024} KB)")
+    for row_idx, segments in enumerate(rows, start=1):
+        first_text = segments[0][1] if segments else f"row {row_idx}"
+        preview = (first_text[:35] + "...") if len(first_text) > 35 else first_text
+        print(f"\nRow {row_idx}/{len(rows)}: {preview}")
 
-    else:
-        headers, data_rows = load_normal_csv()
-        validate_order(headers)
+        row_audio = AudioSegment.empty()
 
-        print("=" * 65)
-        print("Mode: NORMAL (Google Cloud Dutch + Edge-TTS Persian)")
-        print("CSV Columns:")
-        for i, lang in enumerate(headers, 1):
-            print(f"  col{i} = {lang}")
+        for seg_idx, (tag, text) in enumerate(segments, start=1):
+            lang, voice, repeats, speed = resolve_speaker(tag)
+            speed_val = parse_speed_to_float(speed)
+            provider  = "Edge" if lang == "persian" else "Google"
 
-        print("\nPlayback Order:")
-        for item in SEGMENT_ORDER:
-            col_1based = item[0]
-            gender     = item[1]
-            repeats    = item[2]
-            speed      = item[3] if len(item) > 3 else 1.0
-            speed_val  = parse_speed_to_float(speed)
-            lang       = headers[col_1based - 1]
-            voice      = VOICES[(lang, gender)]
-            provider   = "Google" if voice.startswith("nl-") else "Edge"
-            print(f"  col{col_1based} ({lang:7s}) | {gender:6s} | ×{repeats} | speed={speed_val}x | {provider} ({voice})")
+            print(f"  [{tag}] {lang} ({provider}) ×{repeats} (speed={speed_val}x): {text}")
 
-        print(f"\nRows to process: {len(data_rows)}")
-        print("=" * 65)
+            cache_key = (text, voice, speed_val)
+            if cache_key in global_cache:
+                seg = global_cache[cache_key]
+            else:
+                speed_tag = f"_{int(speed_val * 100)}" if speed_val != 1.0 else ""
+                clean_name = "".join(c if c.isalnum() else "_" for c in text)[:20]
+                chunk_file = tmp_dir / f"r{row_idx:03d}_s{seg_idx}_{tag}_{clean_name}{speed_tag}.mp3"
 
-        all_segments: list[AudioSegment] = []
-        generated_row_files: list[Path] = []
+                if not (chunk_file.exists() and chunk_file.stat().st_size > 0):
+                    await make_audio(text, lang, voice, chunk_file, speed=speed_val)
+                    await asyncio.sleep(0.15)
+                seg = AudioSegment.from_mp3(str(chunk_file))
+                global_cache[cache_key] = seg
 
-        for i, cells in enumerate(data_rows, start=1):
-            preview = cells[0].strip() if cells else f"row {i}"
-            print(f"\nRow {i}/{len(data_rows)}: {preview}")
+            pause = adaptive_silence(seg)
+            for _ in range(repeats):
+                row_audio += seg + pause
 
-            segment = await build_row_normal(i, cells, headers, tmp_dir)
-            all_segments.append(segment)
+        all_segments.append(row_audio)
 
-            out_path = OUTPUT_DIR / f"{i:03d}.mp3"
-            normalize_and_export(segment, out_path)
-            generated_row_files.append(out_path)
-            print(f"  Saved: {out_path.name} ({out_path.stat().st_size // 1024} KB)")
+        out_path = OUTPUT_DIR / f"{row_idx:03d}.mp3"
+        normalize_and_export(row_audio, out_path)
+        generated_row_files.append(out_path)
+        print(f"  -> Saved row: {out_path.name} ({out_path.stat().st_size // 1024} KB)")
 
-    # --- Full Combined Lesson ---
+    # 4. Export combined full lesson MP3
     print("\n" + "=" * 65)
     print("Building full combined lesson file...")
     full_lesson = sum(all_segments, AudioSegment.empty())
 
     full_path = OUTPUT_DIR / "full_lesson_google.mp3"
     normalize_and_export(full_lesson, full_path)
-    print(f"Full lesson exported: {full_path.resolve()}")
-    print(f"Duration            : {len(full_lesson) / 1000:.1f}s ({len(full_lesson) / 60000:.1f} mins)")
+    total_time = time.time() - start_time
+    total_duration_sec = len(full_lesson) / 1000.0
+
+    print("=" * 65)
+    print(f"[SUCCESS] Full lesson exported in {total_time:.1f}s!")
+    print(f"  Output path: {full_path.resolve()}")
+    print(f"  Duration   : {total_duration_sec:.1f}s ({total_duration_sec / 60:.1f} mins)")
     print("=" * 65)
 
-    # --- Cleanup chunk files if enabled ---
+    # 5. Cleanup chunk files if enabled
     if CLEANUP_CHUNK_FILES:
         print("\n[Cleanup] Cleaning up individual chunk files...")
         cleaned_count = 0
@@ -659,7 +477,6 @@ async def build_lesson() -> None:
                     cleaned_count += 1
             except Exception:
                 pass
-        import shutil
         if tmp_dir.exists():
             try:
                 shutil.rmtree(tmp_dir)
@@ -668,9 +485,8 @@ async def build_lesson() -> None:
         print(f"[Cleanup] Removed {cleaned_count} row chunk files and temporary cache.")
         print(f"[Cleanup] Clean directory: only '{full_path.name}' remains.")
 
-    print("All tasks completed successfully!")
+    print("\nAll tasks completed successfully!")
 
 
 if __name__ == "__main__":
     asyncio.run(build_lesson())
-
