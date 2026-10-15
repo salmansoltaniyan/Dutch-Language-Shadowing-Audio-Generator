@@ -30,6 +30,12 @@ OUTPUT_BITRATE     = "128k"  # MP3 bitrate
 # Choose which mode to run (True = Dialog Mode, False = Normal Mode)
 DIALOG_MODE = False
 
+# Clean up individual chunk/row files (001.mp3, 002.mp3, ...) and temp cache at the end.
+# True  = Keep ONLY the complete final lesson file ('full_lesson.mp3'), delete all chunks.
+# False = Keep all individual row files (001.mp3, 002.mp3, ...) for separate playback.
+CLEANUP_CHUNK_FILES = True
+
+
 
 # ===========================================================================
 # NORMAL MODE CONFIGURATION
@@ -424,14 +430,48 @@ async def build_dialog_turn(
     return result
 
 
+def clean_previous_outputs(directory: Path) -> None:
+    """Clean up previously generated MP3/WAV files and temporary cache at startup."""
+    if not directory.exists():
+        return
+    removed_count = 0
+    for f in directory.glob("*.mp3"):
+        try:
+            f.unlink()
+            removed_count += 1
+        except Exception:
+            pass
+    for f in directory.glob("*.wav"):
+        try:
+            f.unlink()
+            removed_count += 1
+        except Exception:
+            pass
+    for sub in [directory / "_tmp", directory / "_google_tmp", directory / "_google_cache", directory / "_gemini_tmp"]:
+        if sub.exists():
+            import shutil
+            try:
+                shutil.rmtree(sub)
+                removed_count += 1
+            except Exception:
+                pass
+    if removed_count > 0:
+        print(f"[Startup] Cleaned up {removed_count} previously generated file(s)/folder(s).")
+
+
 # ===========================================================================
 # Lesson builder
 # ===========================================================================
 
 async def build_lesson() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Clean up old files from previous runs
+    clean_previous_outputs(OUTPUT_DIR)
+
     tmp_dir = OUTPUT_DIR / "_tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
+
 
     if DIALOG_MODE:
         speaker_rows = load_dialog_csv()
@@ -451,6 +491,7 @@ async def build_lesson() -> None:
         print("=" * 60)
 
         all_segments: list[AudioSegment] = []
+        generated_row_files: list[Path] = []
         turn_counter = 1
 
         # Process row by row: all sentences of Row 1 (speaker a), then Row 2 (speaker b), etc.
@@ -468,6 +509,7 @@ async def build_lesson() -> None:
             all_segments.append(row_audio)
             out_path = OUTPUT_DIR / f"{row_idx:03d}.mp3"
             normalize_and_export(row_audio, out_path)
+            generated_row_files.append(out_path)
             print(f"  Saved row: {out_path.name} ({out_path.stat().st_size // 1024} KB)")
 
     else:
@@ -494,6 +536,7 @@ async def build_lesson() -> None:
         print("=" * 60)
 
         all_segments: list[AudioSegment] = []
+        generated_row_files: list[Path] = []
 
         for i, cells in enumerate(data_rows, start=1):
             preview = cells[0].strip() if cells else f"row {i}"
@@ -504,6 +547,7 @@ async def build_lesson() -> None:
 
             out_path = OUTPUT_DIR / f"{i:03d}.mp3"
             normalize_and_export(segment, out_path)
+            generated_row_files.append(out_path)
             print(f"  Saved: {out_path.name}  ({out_path.stat().st_size // 1024} KB)")
 
     # --- Full lesson ---
@@ -516,6 +560,27 @@ async def build_lesson() -> None:
     print(f"Full lesson: {full_path}")
     print(f"Duration   : {len(full_lesson) / 1000:.1f}s")
     print("=" * 60)
+
+    # --- Cleanup chunk files if enabled ---
+    if CLEANUP_CHUNK_FILES:
+        print("\n[Cleanup] Cleaning up individual chunk files...")
+        cleaned_count = 0
+        for f in generated_row_files:
+            try:
+                if f.exists():
+                    f.unlink()
+                    cleaned_count += 1
+            except Exception:
+                pass
+        import shutil
+        if tmp_dir.exists():
+            try:
+                shutil.rmtree(tmp_dir)
+            except Exception:
+                pass
+        print(f"[Cleanup] Removed {cleaned_count} row chunk files and temporary cache.")
+        print(f"[Cleanup] Clean directory: only '{full_path.name}' remains.")
+
     print("Done!")
 
 

@@ -18,3 +18,13 @@ output/
 .idea/
 *.swp
 *.swo
+
+# Secrets, Credentials & API Keys
+.env
+.env.*
+*.key
+google_api_key.txt
+gemini_api_key.txt
+*secret*
+
+
