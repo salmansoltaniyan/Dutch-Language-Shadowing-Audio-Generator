@@ -110,17 +110,17 @@ SPEAKERS = {
         "language": "dutch",
         "voice":    "male1",   # Google Chirp 3: HD Male (Fenrir)
         "repeats":  1,
-        "speed":    0.85,
+        "speed":    0.95,
     },
     "b": {
         "language": "dutch",
-        "voice":    "female1", # Google Chirp 3: HD Female (Aoede)
+        "voice":    "male1", # Google Chirp 3: HD Female (Aoede)
         "repeats":  2,         # Repeated twice for shadowing practice
         "speed":    0.95,
     },
     "d": {
         "language": "dutch",
-        "voice":    "male2", # Google Chirp 3: HD Male (Algenib)
+        "voice":    "female1", # Google Chirp 3: HD Female (Aoede)
         "repeats":  2,         # Repeated twice for shadowing practice
         "speed":    0.95,
     },
@@ -154,9 +154,14 @@ SPEAKERS = {
 # ---------------------------------------------------------------------------
 
 LESSON_DATA = """
-a: uitstekend b: Het gaat uitstekend met mij.  b: Wij hebben een fantastisch weekend gehad d: Het gaat vandaag niet zo goed met hem. c: عالی
-a: fantastisch b: Wij hebben een fantastisch weekend gehad. c: فوق‌العاده
-a: niet zo goed b: Het gaat vandaag niet zo goed met hem. c: نه چندان خوب
+a: modale werkwoorden d: Welke grammatica leren we vandaag b: We leren modale werkwoorden zoals kunnen en moeten c: افعال کمکی
+a: samenwerken d: Moet ik alleen werken b: Nee jullie mogen samenwerken c: همکاری کردن
+a: in tweetallen d: Hoe maken we deze opdracht b: Werk in tweetallen en stel elkaar vragen c: به صورت دونفره
+a: het strookje d: Wat geeft de docent aan ons b: Iedereen krijgt een strookje papier c: برگه باریک کاغذی
+a: de kring d: Waar leggen we de kaartjes neer b: We leggen de strookjes in een kring c: دایره
+a: spellen d: Hoe schrijf ik jouw naam b: Zal ik mijn naam even spellen c: هجی کردن
+a: de kapper d: Naar wie ga je toe b: Ik geef ook een fooi aan de kapper c: آرایشگر
+a: de taxichauffeur d: Wie brengt jou naar het hotel b: De taxichauffeur krijgt een goede fooi c: راننده تاکسی   
 """.strip()
 
 
