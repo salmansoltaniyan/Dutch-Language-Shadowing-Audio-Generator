@@ -38,7 +38,7 @@ GOOGLE_API_KEY = (
 )
 
 # Adaptive silence: pause after each play = segment_duration × SILENCE_RATIO
-SILENCE_RATIO  = 0.9
+SILENCE_RATIO  = 1.2
 MIN_SILENCE_MS = 1000   # minimum pause in milliseconds
 
 # Final MP3 output settings (normalized for universal player compatibility)
@@ -114,17 +114,23 @@ SPEAKERS = {
     },
     "b": {
         "language": "dutch",
-        "voice":    "male1", # Google Chirp 3: HD Female (Aoede)
-        "repeats":  2,         # Repeated twice for shadowing practice
-        "speed":    0.95,
-    },
-    "d": {
-        "language": "dutch",
         "voice":    "female1", # Google Chirp 3: HD Female (Aoede)
         "repeats":  2,         # Repeated twice for shadowing practice
         "speed":    0.95,
     },
     "c": {
+        "language": "dutch",
+        "voice":    "male2", # Google Chirp 3: HD Male (Algenib)
+        "repeats":  2,         # Repeated twice for shadowing practice
+        "speed":    0.95,
+    },
+    "d": {
+    "language": "dutch",
+    "voice":    "female2", # Google Chirp 3: HD Female (Aoede)
+    "repeats":  2,         # Repeated twice for shadowing practice
+    "speed":    0.95,
+    },
+    "e": {
         "language": "persian",
         "voice":    "female1", # Edge-TTS Persian Female (Dilara)
         "repeats":  1,
@@ -154,14 +160,27 @@ SPEAKERS = {
 # ---------------------------------------------------------------------------
 
 LESSON_DATA = """
-a: modale werkwoorden d: Welke grammatica leren we vandaag b: We leren modale werkwoorden zoals kunnen en moeten c: افعال کمکی
-a: samenwerken d: Moet ik alleen werken b: Nee jullie mogen samenwerken c: همکاری کردن
-a: in tweetallen d: Hoe maken we deze opdracht b: Werk in tweetallen en stel elkaar vragen c: به صورت دونفره
-a: het strookje d: Wat geeft de docent aan ons b: Iedereen krijgt een strookje papier c: برگه باریک کاغذی
-a: de kring d: Waar leggen we de kaartjes neer b: We leggen de strookjes in een kring c: دایره
-a: spellen d: Hoe schrijf ik jouw naam b: Zal ik mijn naam even spellen c: هجی کردن
-a: de kapper d: Naar wie ga je toe b: Ik geef ook een fooi aan de kapper c: آرایشگر
-a: de taxichauffeur d: Wie brengt jou naar het hotel b: De taxichauffeur krijgt een goede fooi c: راننده تاکسی   
+a: me b: Zie je me c: Ja ik zie je
+a: je b: Ik hoor je niet b: Spreek wat harder
+a: hem b: Waar is Jan c: Ik zie hem daar
+a: haar b: Waar is Lisa c: Ik zoek haar nu
+a: hem b: Heb je de appel c: Nee ik eet hem niet
+a: ons b: Zien jullie ons c: Ja we zien jullie
+a: jullie b: Waar zijn jullie b: Ik mis jullie
+a: ze b: Waar zijn de pennen c: Ik heb ze hier
+a: mij b: Mevrouw ik heb een vraag b: Kunt u mij helpen c: Natuurlijk ik help u graag
+a: jou b: Ik vind jou heel aardig b: Zullen we samen iets drinken c: Ja gezellig ik ga met je mee
+a: u b: Goedemiddag kan ik u helpen c: Ja graag ik zoek een spijkerbroek
+a: hem b: Is Simon nu thuis c: Ja ik zal hem even roepen
+a: hem b: Wat een leuke broek b: Kan ik hem even passen c: Ja hoor daar zijn de paskamers
+a: haar b: Patricia woont ook in deze stad b: Ik kom haar vaak tegen op straat
+a: het b: Wat een leuk boek b: Ik ga het straks ook kopen
+a: het b: Hebt u dit shirt in een kleinere maat c: Ja ik zal het even voor u halen
+a: ons b: Wij spreken helaas geen Nederlands b: Wie kan ons helpen c: Ik kan jullie wel helpen
+a: jullie b: Kan ik jullie helpen c: Nee we kijken alleen even rond
+a: ze b: Waar zijn Jenny en Johan gebleven c: Ik haal ze direct uit de kantine
+a: ze b: Waar haal je die lekkere tomaten c: Ik koop ze altijd op de markt
+a: ze b: Ik geef u twee verschillende spijkerbroeken c: Waar kan ik ze ergens passen
 """.strip()
 
 
