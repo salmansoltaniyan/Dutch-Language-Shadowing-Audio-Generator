@@ -38,6 +38,7 @@ GOOGLE_API_KEY = (
 )
 
 # Adaptive silence: pause after each play = segment_duration × SILENCE_RATIO
+# This is the default; any speaker can override it with its own 'silence_ratio' in SPEAKERS.
 SILENCE_RATIO  = 1.6
 MIN_SILENCE_MS = 1000   # minimum pause in milliseconds
 
@@ -107,6 +108,8 @@ VOICE_PRESETS = {
 #   voice    : "male1" | "male2" | "female1" | "female2" (or exact voice name)
 #   repeats  : how many times this segment is repeated (e.g. 1, 2, 3)
 #   speed    : playback speed multiplier (e.g. 0.85, 0.95, 1.0)
+#   silence_ratio : (optional) pause after this speaker = segment length × value;
+#                   if omitted, the global SILENCE_RATIO is used
 # ---------------------------------------------------------------------------
 
 SPEAKERS = {
@@ -286,6 +289,14 @@ def resolve_speaker(tag: str) -> tuple[str, str, int, float]:
     return lang, voice_name, repeats, speed
 
 
+def speaker_silence_ratio(tag: str) -> float:
+    """Return the speaker's own 'silence_ratio', or the global SILENCE_RATIO if not set."""
+    cfg = SPEAKERS.get(tag)
+    if isinstance(cfg, dict) and "silence_ratio" in cfg:
+        return float(cfg["silence_ratio"])
+    return SILENCE_RATIO
+
+
 def parse_speed_to_float(speed: float | int | str = 1.0) -> float:
     """Convert speed input (e.g. 0.85, '0.85x', '-15%') to float multiplier."""
     if isinstance(speed, str):
@@ -383,9 +394,9 @@ async def make_audio(
             await asyncio.sleep(wait_time)
 
 
-def adaptive_silence(segment: AudioSegment) -> AudioSegment:
+def adaptive_silence(segment: AudioSegment, ratio: float) -> AudioSegment:
     """Return silence whose duration scales with the segment's length."""
-    ms = max(MIN_SILENCE_MS, int(len(segment) * SILENCE_RATIO))
+    ms = max(MIN_SILENCE_MS, int(len(segment) * ratio))
     return AudioSegment.silent(duration=ms)
 
 
@@ -469,7 +480,7 @@ async def build_lesson() -> None:
     for tag, cfg in SPEAKERS.items():
         lang, voice, repeats, speed = resolve_speaker(tag)
         provider = "Edge-TTS" if lang == "persian" else "Google Chirp"
-        print(f"  [{tag}] -> {lang.title():7s} | {voice} (×{repeats}, speed={speed}x) [{provider}]")
+        print(f"  [{tag}] -> {lang.title():7s} | {voice} (×{repeats}, speed={speed}x, silence={speaker_silence_ratio(tag)}) [{provider}]")
 
     print(f"\nTotal lesson units to process: {len(rows)}")
     print("=" * 65)
@@ -508,7 +519,7 @@ async def build_lesson() -> None:
                 seg = AudioSegment.from_mp3(str(chunk_file))
                 global_cache[cache_key] = seg
 
-            pause = adaptive_silence(seg)
+            pause = adaptive_silence(seg, speaker_silence_ratio(tag))
             for _ in range(repeats):
                 row_audio += seg + pause
 
