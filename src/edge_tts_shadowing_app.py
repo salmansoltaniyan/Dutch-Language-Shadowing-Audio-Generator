@@ -36,8 +36,12 @@ OUTPUT_SAMPLE_RATE = 44100   # Hz (standard CD quality)
 OUTPUT_CHANNELS    = 2       # 1=mono, 2=stereo
 OUTPUT_BITRATE     = "192k"  # High quality MP3 bitrate
 
+# Final lesson file name. A date-time stamp is appended on every run
+# (e.g. 'full_lesson_edge_2026-10-31_14-05-12.mp3'), so previous lessons are never overwritten.
+OUTPUT_NAME = "full_lesson_edge"
+
 # Clean up individual chunk/row files (001.mp3, 002.mp3, ...) and temp cache at the end.
-# True  = Keep ONLY the complete final lesson file ('full_lesson_edge.mp3'), delete all chunks.
+# True  = Keep ONLY the complete final lesson file, delete all chunks.
 # False = Keep all individual row files (001.mp3, 002.mp3, ...) for separate playback.
 CLEANUP_CHUNK_FILES = True
 
@@ -300,20 +304,23 @@ def normalize_and_export(audio: AudioSegment, path: Path) -> None:
     audio.export(str(path), format="mp3", bitrate=OUTPUT_BITRATE)
 
 
+def unique_output_path(directory: Path, name: str) -> Path:
+    """Return '<name>_<date-time>.mp3' in directory, never an existing file."""
+    stamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+    path = directory / f"{name}_{stamp}.mp3"
+    counter = 2
+    while path.exists():
+        path = directory / f"{name}_{stamp}_{counter}.mp3"
+        counter += 1
+    return path
+
+
 def clean_previous_outputs(directory: Path) -> None:
-    """Clean up previously generated chunk files, full_lesson_edge.mp3, and temporary cache at startup."""
+    """Clean up leftover row files (001.mp3, ...) and temporary cache at startup.
+    Final lesson files are kept."""
     if not directory.exists():
         return
     removed_count = 0
-
-    # Clean previous full_lesson_edge or old full_lesson files
-    for target in [directory / "full_lesson_edge.mp3", directory / "full_lesson.mp3"]:
-        if target.exists():
-            try:
-                target.unlink()
-                removed_count += 1
-            except Exception:
-                pass
 
     # Clean intermediate row files (001.mp3, 002.mp3, etc.)
     for f in directory.glob("[0-9][0-9][0-9].mp3"):
@@ -421,7 +428,7 @@ async def build_lesson() -> None:
     print("Building full combined lesson file...")
     full_lesson = sum(all_segments, AudioSegment.empty())
 
-    full_path = OUTPUT_DIR / "full_lesson_edge.mp3"
+    full_path = unique_output_path(OUTPUT_DIR, OUTPUT_NAME)
     normalize_and_export(full_lesson, full_path)
     total_time = time.time() - start_time
     total_duration_sec = len(full_lesson) / 1000.0
@@ -449,7 +456,7 @@ async def build_lesson() -> None:
             except Exception:
                 pass
         print(f"[Cleanup] Removed {cleaned_count} row chunk files and temporary cache.")
-        print(f"[Cleanup] Clean directory: only '{full_path.name}' remains.")
+        print(f"[Cleanup] Only final lesson files remain (new: '{full_path.name}').")
 
     print("\nAll tasks completed successfully!")
 
