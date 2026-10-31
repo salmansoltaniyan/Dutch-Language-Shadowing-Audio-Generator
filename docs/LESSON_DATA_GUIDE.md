@@ -47,9 +47,15 @@ in this format:
 SPEAKERS = {
     "a": {"language": "dutch",   "voice": "male1",   "repeats": 1, "speed": 0.95},
     "b": {"language": "dutch",   "voice": "female1", "repeats": 1, "speed": 0.95},
-    "e": {"language": "persian", "voice": "female1", "repeats": 1, "speed": 1.1},
+    "e": {"language": "persian", "voice": "female1", "repeats": 1, "speed": 1.1,
+          "silence_ratio": 0.5},
 }
 ```
+
+`silence_ratio` is optional: the pause after that speaker is
+`segment length × silence_ratio`. Without it, the global `SILENCE_RATIO` is used.
+Typical use: a short pause after the Persian translation (nothing to repeat)
+and a long pause after Dutch (time to shadow).
 
 ## Syntax rules (important)
 
