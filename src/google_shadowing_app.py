@@ -38,7 +38,7 @@ GOOGLE_API_KEY = (
 )
 
 # Adaptive silence: pause after each play = segment_duration × SILENCE_RATIO
-SILENCE_RATIO  = 1.2
+SILENCE_RATIO  = 1.6
 MIN_SILENCE_MS = 1000   # minimum pause in milliseconds
 
 # Final MP3 output settings (normalized for universal player compatibility)
@@ -46,8 +46,12 @@ OUTPUT_SAMPLE_RATE = 44100   # Hz (standard CD quality)
 OUTPUT_CHANNELS    = 2       # 1=mono, 2=stereo
 OUTPUT_BITRATE     = "192k"  # High quality MP3 bitrate
 
+# Final lesson file name. A date-time stamp is appended on every run
+# (e.g. 'full_lesson_google_2026-10-31_14-05-12.mp3'), so previous lessons are never overwritten.
+OUTPUT_NAME = "full_lesson_google"
+
 # Clean up individual chunk/row files (001.mp3, 002.mp3, ...) and temp cache at the end.
-# True  = Keep ONLY the complete final lesson file ('full_lesson_google.mp3'), delete all chunks.
+# True  = Keep ONLY the complete final lesson file, delete all chunks.
 # False = Keep all individual row files (001.mp3, 002.mp3, ...) for separate playback.
 CLEANUP_CHUNK_FILES = True
 
@@ -115,29 +119,40 @@ SPEAKERS = {
     "b": {
         "language": "dutch",
         "voice":    "female1", # Google Chirp 3: HD Female (Aoede)
-        "repeats":  2,         # Repeated twice for shadowing practice
+        "repeats": 1,         # Repeated twice for shadowing practice
         "speed":    0.95,
     },
     "c": {
         "language": "dutch",
         "voice":    "male2", # Google Chirp 3: HD Male (Algenib)
-        "repeats":  2,         # Repeated twice for shadowing practice
+        "repeats":  1,         # Repeated twice for shadowing practice
         "speed":    0.95,
     },
     "d": {
     "language": "dutch",
     "voice":    "female2", # Google Chirp 3: HD Female (Aoede)
-    "repeats":  2,         # Repeated twice for shadowing practice
+    "repeats":  1,         # Repeated twice for shadowing practice
     "speed":    0.95,
     },
     "e": {
         "language": "persian",
         "voice":    "female1", # Edge-TTS Persian Female (Dilara)
         "repeats":  1,
-        "speed":    1.00,
+        "speed":    1.1,
     },
-}
-
+    "f": {
+    "language": "persian",
+    "voice":    "male1", # Edge-TTS Persian Male (Farid)
+    "repeats":  1,
+    "speed":    1.1,
+    },
+    "g": {
+    "language": "persian",
+    "voice":    "female2", # Edge-TTS Persian Female (Dilara)
+    "repeats":  1,
+    "speed":    1.1,
+    },
+    }
 
 # ===========================================================================
 # LESSON DATA (Unified Format)
@@ -160,27 +175,45 @@ SPEAKERS = {
 # ---------------------------------------------------------------------------
 
 LESSON_DATA = """
-a: me b: Zie je me c: Ja ik zie je
-a: je b: Ik hoor je niet b: Spreek wat harder
-a: hem b: Waar is Jan c: Ik zie hem daar
-a: haar b: Waar is Lisa c: Ik zoek haar nu
-a: hem b: Heb je de appel c: Nee ik eet hem niet
-a: ons b: Zien jullie ons c: Ja we zien jullie
-a: jullie b: Waar zijn jullie b: Ik mis jullie
-a: ze b: Waar zijn de pennen c: Ik heb ze hier
-a: mij b: Mevrouw ik heb een vraag b: Kunt u mij helpen c: Natuurlijk ik help u graag
-a: jou b: Ik vind jou heel aardig b: Zullen we samen iets drinken c: Ja gezellig ik ga met je mee
-a: u b: Goedemiddag kan ik u helpen c: Ja graag ik zoek een spijkerbroek
-a: hem b: Is Simon nu thuis c: Ja ik zal hem even roepen
-a: hem b: Wat een leuke broek b: Kan ik hem even passen c: Ja hoor daar zijn de paskamers
-a: haar b: Patricia woont ook in deze stad b: Ik kom haar vaak tegen op straat
-a: het b: Wat een leuk boek b: Ik ga het straks ook kopen
-a: het b: Hebt u dit shirt in een kleinere maat c: Ja ik zal het even voor u halen
-a: ons b: Wij spreken helaas geen Nederlands b: Wie kan ons helpen c: Ik kan jullie wel helpen
-a: jullie b: Kan ik jullie helpen c: Nee we kijken alleen even rond
-a: ze b: Waar zijn Jenny en Johan gebleven c: Ik haal ze direct uit de kantine
-a: ze b: Waar haal je die lekkere tomaten c: Ik koop ze altijd op de markt
-a: ze b: Ik geef u twee verschillende spijkerbroeken c: Waar kan ik ze ergens passen
+e: نوبت چه کسی است؟ a: Wie is er aan de beurt? e: نوبت چه کسی است؟ a: Wie is er aan de beurt?
+f: من. b: Ik. f: من. b: Ik.
+e: بفرمایید (امر بفرمایید). a: Zeg het maar. e: بفرمایید (امر بفرمایید). a: Zeg het maar.
+f: لطفاً می‌توانم یک کدو سبز کوچک، دو تا فلفل دلمه‌ای زرد و شش تا گوجه‌فرنگی قشنگ داشته باشم؟ b: Mag ik alsjeblieft een kleine courgette, twee gele paprika's en zes mooie tomaten? f: لطفاً می‌توانم یک کدو سبز کوچک، دو تا فلفل دلمه‌ای زرد و شش تا گوجه‌فرنگی قشنگ داشته باشم؟ b: Mag ik alsjeblieft een kleine courgette, twee gele paprika's en zes mooie tomaten?
+e: هی! گوجه‌فرنگی‌ها اینجا همیشه خوب و قشنگ هستند! a: Hé! De tomaten zijn hier altijd mooi! e: هی! گوجه‌فرنگی‌ها اینجا همیشه خوب و قشنگ هستند! a: Hé! De tomaten zijn hier altijd mooi!
+f: ببخشید. معلومه! b: Sorry. Tuurlijk! f: ببخشید. معلومه! b: Sorry. Tuurlijk!
+e: چیز دیگری لازم دارید؟ a: Anders nog iets? e: چیز دیگری لازم دارید؟ a: Anders nog iets?
+f: بله، من می‌خواهم یک غذای اصیل هلندی درست کنم. b: Ja, ik wil graag een typisch Nederlands gerecht maken. f: بله، من می‌خواهم یک غذای اصیل هلندی درست کنم. b: Ja, ik wil graag een typisch Nederlands gerecht maken.
+f: همسایه‌های ما فردا برای شام می‌آیند. b: Onze buren komen morgen eten. f: همسایه‌های ما فردا برای شام می‌آیند. b: Onze buren komen morgen eten.
+f: آن‌ها اهل هلند نیستند. b: Ze komen niet uit Nederland. f: آن‌ها اهل هلند نیستند. b: Ze komen niet uit Nederland.
+e: خارجی‌ها اغلب استامپ‌پوت کاسنی‌فرنگی با تکه‌های بیکن را بسیار خوشمزه می‌دانند. a: Buitenlanders vinden stamppot andijvie met spekjes vaak heerlijk. e: خارجی‌ها اغلب استامپ‌پوت کاسنی‌فرنگی با تکه‌های بیکن را بسیار خوشمزه می‌دانند. a: Buitenlanders vinden stamppot andijvie met spekjes vaak heerlijk.
+e: و من امروز کاسنی‌فرنگی عالی و ارزان دارم. a: En ik heb vandaag mooie, goedkope andijvie. e: و من امروز کاسنی‌فرنگی عالی و ارزان دارم. a: En ik heb vandaag mooie, goedkope andijvie.
+f: ایده خوبی است. b: Dat is een goed idee. f: ایده خوبی است. b: Dat is een goed idee.
+f: برای چهار نفر چه مقدار نیاز دارم؟ b: Hoeveel heb ik nodig voor vier personen? f: برای چهار نفر چه مقدار نیاز دارم؟ b: Hoeveel heb ik nodig voor vier personen?
+e: حدود نیم کیلو کاسنی‌فرنگی و یک کیلو سیب‌زمینی. a: Ongeveer een halve kilo andijvie en een kilo aardappels. e: حدود نیم کیلو کاسنی‌فرنگی و یک کیلو سیب‌زمینی. a: Ongeveer een halve kilo andijvie en een kilo aardappels.
+e: برای تکه‌های بیکن باید به قصابی بروی. a: Voor de spekjes moet je naar de slager. e: برای تکه‌های بیکن باید به قصابی بروی. a: Voor de spekjes moet je naar de slager.
+f: بسیار خوب، بگذارید (همان‌ها را بدهید). b: Prima, doe maar. f: بسیار خوب، بگذارید (همان‌ها را بدهید). b: Prima, doe maar.
+e: همین بود؟ a: Dat was het? e: همین بود؟ a: Dat was het?
+f: نه. یک گل‌کلم هم بگذارید. b: Nee. Doe ook maar een bloemkool. f: نه. یک گل‌کلم هم بگذارید. b: Nee. Doe ook maar een bloemkool.
+f: یک گل‌کلم کوچک. b: Een kleine bloemkool. f: یک گل‌کلم کوچک. b: Een kleine bloemkool.
+f: و همچنین لطفاً یک بسته کوچک قارچ. b: En ook graag een klein bakje champignons. f: و همچنین لطفاً یک بسته کوچک قارچ. b: En ook graag een klein bakje champignons.
+f: و جعفری. b: En peterselie. f: و جعفری. b: En peterselie.
+f: لطفاً آن دسته کوچک را بدهید. b: Dat kleine bosje graag. f: لطفاً آن دسته کوچک را بدهید. b: Dat kleine bosje graag.
+e: باز هم چیز دیگری؟ a: Verder nog? e: باز هم چیز دیگری؟ a: Verder nog?
+e: من لوبیاهای خوب و ظریف، سیر تازه، سه تا خیار به قیمت یک یورو دارم... a: Ik heb mooie, fijne boontjes, verse knoflook, drie komkommers voor één euro... e: من لوبیاهای خوب و ظریف، سیر تازه، سه تا خیار به قیمت یک یورو دارم... a: Ik heb mooie, fijne boontjes, verse knoflook, drie komkommers voor één euro...
+f: نه، همین‌قدر کافی است. b: Nee, zo is het wel genoeg. f: نه، همین‌قدر کافی است. b: Nee, zo is het wel genoeg.
+f: من هفته آینده به تعطیلات می‌روم. b: Ik ga volgende week op vakantie. f: من هفته آینده به تعطیلات می‌روم. b: Ik ga volgende week op vakantie.
+e: اوه، چه عالی. به کجا؟ a: O, lekker. Waarnaartoe? e: اوه، چه عالی. به کجا؟ a: O, lekker. Waarnaartoe?
+f: ونیز. b: Venetië. f: ونیز. b: Venetië.
+e: فوق‌العاده است. a: Prachtig. e: فوق‌العاده است. a: Prachtig.
+e: پس می‌شود هشت و سی. a: Dat is dan acht dertig. e: پس می‌شود هشت و سی. a: Dat is dan acht dertig.
+e: آیا سی سنت خرده همراهت داری؟ a: Heb je er dertig cent bij? e: آیا سی سنت خرده همراهت داری؟ a: Heb je er dertig cent bij?
+f: نه، متأسفم. b: Nee, sorry. f: نه، متأسفم. b: Nee, sorry.
+e: اشکالی ندارد. a: Geeft niet. e: اشکالی ندارد. a: Geeft niet.
+e: هشت و پنجاه، نه و این هم ده. a: Acht vijftig, negen en dat is tien. e: هشت و پنجاه، نه و این هم ده. a: Acht vijftig, negen en dat is tien.
+e: خب، تعطیلات خوش بگذرد! a: Nou, prettige vakantie! e: خب، تعطیلات خوش بگذرد! a: Nou, prettige vakantie!
+f: خیلی ممنون. b: Dank je wel. f: خیلی ممنون. b: Dank je wel.
+f: آخر هفته خوبی داشته باشید. b: Prettig weekend. f: آخر هفته خوبی داشته باشید. b: Prettig weekend.
+f: خداحافظ! b: Dag! f: خداحافظ! b: Dag!
 """.strip()
 
 
@@ -364,12 +397,24 @@ def normalize_and_export(audio: AudioSegment, path: Path) -> None:
     audio.export(str(path), format="mp3", bitrate=OUTPUT_BITRATE)
 
 
+def unique_output_path(directory: Path, name: str) -> Path:
+    """Return '<name>_<date-time>.mp3' in directory, never an existing file."""
+    stamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+    path = directory / f"{name}_{stamp}.mp3"
+    counter = 2
+    while path.exists():
+        path = directory / f"{name}_{stamp}_{counter}.mp3"
+        counter += 1
+    return path
+
+
 def clean_previous_outputs(directory: Path) -> None:
-    """Clean up previously generated MP3/WAV files and temporary cache at startup."""
+    """Clean up leftover row files (001.mp3, ...) and temporary cache at startup.
+    Final lesson files are kept."""
     if not directory.exists():
         return
     removed_count = 0
-    for f in directory.glob("*.mp3"):
+    for f in directory.glob("[0-9][0-9][0-9].mp3"):
         try:
             f.unlink()
             removed_count += 1
@@ -479,7 +524,7 @@ async def build_lesson() -> None:
     print("Building full combined lesson file...")
     full_lesson = sum(all_segments, AudioSegment.empty())
 
-    full_path = OUTPUT_DIR / "full_lesson_google.mp3"
+    full_path = unique_output_path(OUTPUT_DIR, OUTPUT_NAME)
     normalize_and_export(full_lesson, full_path)
     total_time = time.time() - start_time
     total_duration_sec = len(full_lesson) / 1000.0
@@ -507,7 +552,7 @@ async def build_lesson() -> None:
             except Exception:
                 pass
         print(f"[Cleanup] Removed {cleaned_count} row chunk files and temporary cache.")
-        print(f"[Cleanup] Clean directory: only '{full_path.name}' remains.")
+        print(f"[Cleanup] Only final lesson files remain (new: '{full_path.name}').")
 
     print("\nAll tasks completed successfully!")
 
