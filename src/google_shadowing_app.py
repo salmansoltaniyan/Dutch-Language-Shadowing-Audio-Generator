@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import asyncio
@@ -112,51 +113,55 @@ VOICE_PRESETS = {
 #                   if omitted, the global SILENCE_RATIO is used
 # ---------------------------------------------------------------------------
 
+# SPEAKERS = {
+#     "a": {
+#         "language": "dutch",
+#         "voice":    "male1",   # Google Chirp 3: HD Male (Fenrir)
+#         "repeats":  1,
+#         "speed":    0.95,
+#     },
+#     "b": {
+#         "language": "dutch",
+#         "voice":    "female1", # Google Chirp 3: HD Female (Aoede)
+#         "repeats": 1,         # Repeated twice for shadowing practice
+#         "speed":    0.95,
+#     },
+#     "c": {
+#         "language": "dutch",
+#         "voice":    "male2", # Google Chirp 3: HD Male (Algenib)
+#         "repeats":  1,         # Repeated twice for shadowing practice
+#         "speed":    0.95,
+#     },
+#     "d": {
+#     "language": "dutch",
+#     "voice":    "female2", # Google Chirp 3: HD Female (Aoede)
+#     "repeats":  1,         # Repeated twice for shadowing practice
+#     "speed":    0.95,
+#     },
+#     "e": {
+#         "language": "persian",
+#         "voice":    "female1", # Edge-TTS Persian Female (Dilara)
+#         "repeats":  1,
+#         "speed":    1.1,
+#     },
+#     "f": {
+#     "language": "persian",
+#     "voice":    "male1", # Edge-TTS Persian Male (Farid)
+#     "repeats":  1,
+#     "speed":    1.1,
+#     },
+#     "g": {
+#     "language": "persian",
+#     "voice":    "female2", # Edge-TTS Persian Female (Dilara)
+#     "repeats":  1,
+#     "speed":    1.1,
+#     },
+#     }
 SPEAKERS = {
-    "a": {
-        "language": "dutch",
-        "voice":    "male1",   # Google Chirp 3: HD Male (Fenrir)
-        "repeats":  1,
-        "speed":    0.95,
-    },
-    "b": {
-        "language": "dutch",
-        "voice":    "female1", # Google Chirp 3: HD Female (Aoede)
-        "repeats": 1,         # Repeated twice for shadowing practice
-        "speed":    0.95,
-    },
-    "c": {
-        "language": "dutch",
-        "voice":    "male2", # Google Chirp 3: HD Male (Algenib)
-        "repeats":  1,         # Repeated twice for shadowing practice
-        "speed":    0.95,
-    },
-    "d": {
-    "language": "dutch",
-    "voice":    "female2", # Google Chirp 3: HD Female (Aoede)
-    "repeats":  1,         # Repeated twice for shadowing practice
-    "speed":    0.95,
-    },
-    "e": {
-        "language": "persian",
-        "voice":    "female1", # Edge-TTS Persian Female (Dilara)
-        "repeats":  1,
-        "speed":    1.1,
-    },
-    "f": {
-    "language": "persian",
-    "voice":    "male1", # Edge-TTS Persian Male (Farid)
-    "repeats":  1,
-    "speed":    1.1,
-    },
-    "g": {
-    "language": "persian",
-    "voice":    "female2", # Edge-TTS Persian Female (Dilara)
-    "repeats":  1,
-    "speed":    1.1,
-    },
-    }
-
+    "a": {"language": "dutch",   "voice": "male1",   "repeats": 1, "speed": 0.95, "silence_ratio": 1.6},
+    "b": {"language": "dutch",   "voice": "female1", "repeats": 1, "speed": 0.95, "silence_ratio": 1.0},
+    "e": {"language": "persian", "voice": "female1", "repeats": 1, "speed": 1.1,  "silence_ratio": 0.3},
+}
 # ===========================================================================
 # LESSON DATA (Unified Format)
 # ===========================================================================
@@ -178,45 +183,39 @@ SPEAKERS = {
 # ---------------------------------------------------------------------------
 
 LESSON_DATA = """
-e: نوبت چه کسی است؟ a: Wie is er aan de beurt? e: نوبت چه کسی است؟ a: Wie is er aan de beurt?
-f: من. b: Ik. f: من. b: Ik.
-e: بفرمایید (امر بفرمایید). a: Zeg het maar. e: بفرمایید (امر بفرمایید). a: Zeg het maar.
-f: لطفاً می‌توانم یک کدو سبز کوچک، دو تا فلفل دلمه‌ای زرد و شش تا گوجه‌فرنگی قشنگ داشته باشم؟ b: Mag ik alsjeblieft een kleine courgette, twee gele paprika's en zes mooie tomaten? f: لطفاً می‌توانم یک کدو سبز کوچک، دو تا فلفل دلمه‌ای زرد و شش تا گوجه‌فرنگی قشنگ داشته باشم؟ b: Mag ik alsjeblieft een kleine courgette, twee gele paprika's en zes mooie tomaten?
-e: هی! گوجه‌فرنگی‌ها اینجا همیشه خوب و قشنگ هستند! a: Hé! De tomaten zijn hier altijd mooi! e: هی! گوجه‌فرنگی‌ها اینجا همیشه خوب و قشنگ هستند! a: Hé! De tomaten zijn hier altijd mooi!
-f: ببخشید. معلومه! b: Sorry. Tuurlijk! f: ببخشید. معلومه! b: Sorry. Tuurlijk!
-e: چیز دیگری لازم دارید؟ a: Anders nog iets? e: چیز دیگری لازم دارید؟ a: Anders nog iets?
-f: بله، من می‌خواهم یک غذای اصیل هلندی درست کنم. b: Ja, ik wil graag een typisch Nederlands gerecht maken. f: بله، من می‌خواهم یک غذای اصیل هلندی درست کنم. b: Ja, ik wil graag een typisch Nederlands gerecht maken.
-f: همسایه‌های ما فردا برای شام می‌آیند. b: Onze buren komen morgen eten. f: همسایه‌های ما فردا برای شام می‌آیند. b: Onze buren komen morgen eten.
-f: آن‌ها اهل هلند نیستند. b: Ze komen niet uit Nederland. f: آن‌ها اهل هلند نیستند. b: Ze komen niet uit Nederland.
-e: خارجی‌ها اغلب استامپ‌پوت کاسنی‌فرنگی با تکه‌های بیکن را بسیار خوشمزه می‌دانند. a: Buitenlanders vinden stamppot andijvie met spekjes vaak heerlijk. e: خارجی‌ها اغلب استامپ‌پوت کاسنی‌فرنگی با تکه‌های بیکن را بسیار خوشمزه می‌دانند. a: Buitenlanders vinden stamppot andijvie met spekjes vaak heerlijk.
-e: و من امروز کاسنی‌فرنگی عالی و ارزان دارم. a: En ik heb vandaag mooie, goedkope andijvie. e: و من امروز کاسنی‌فرنگی عالی و ارزان دارم. a: En ik heb vandaag mooie, goedkope andijvie.
-f: ایده خوبی است. b: Dat is een goed idee. f: ایده خوبی است. b: Dat is een goed idee.
-f: برای چهار نفر چه مقدار نیاز دارم؟ b: Hoeveel heb ik nodig voor vier personen? f: برای چهار نفر چه مقدار نیاز دارم؟ b: Hoeveel heb ik nodig voor vier personen?
-e: حدود نیم کیلو کاسنی‌فرنگی و یک کیلو سیب‌زمینی. a: Ongeveer een halve kilo andijvie en een kilo aardappels. e: حدود نیم کیلو کاسنی‌فرنگی و یک کیلو سیب‌زمینی. a: Ongeveer een halve kilo andijvie en een kilo aardappels.
-e: برای تکه‌های بیکن باید به قصابی بروی. a: Voor de spekjes moet je naar de slager. e: برای تکه‌های بیکن باید به قصابی بروی. a: Voor de spekjes moet je naar de slager.
-f: بسیار خوب، بگذارید (همان‌ها را بدهید). b: Prima, doe maar. f: بسیار خوب، بگذارید (همان‌ها را بدهید). b: Prima, doe maar.
-e: همین بود؟ a: Dat was het? e: همین بود؟ a: Dat was het?
-f: نه. یک گل‌کلم هم بگذارید. b: Nee. Doe ook maar een bloemkool. f: نه. یک گل‌کلم هم بگذارید. b: Nee. Doe ook maar een bloemkool.
-f: یک گل‌کلم کوچک. b: Een kleine bloemkool. f: یک گل‌کلم کوچک. b: Een kleine bloemkool.
-f: و همچنین لطفاً یک بسته کوچک قارچ. b: En ook graag een klein bakje champignons. f: و همچنین لطفاً یک بسته کوچک قارچ. b: En ook graag een klein bakje champignons.
-f: و جعفری. b: En peterselie. f: و جعفری. b: En peterselie.
-f: لطفاً آن دسته کوچک را بدهید. b: Dat kleine bosje graag. f: لطفاً آن دسته کوچک را بدهید. b: Dat kleine bosje graag.
-e: باز هم چیز دیگری؟ a: Verder nog? e: باز هم چیز دیگری؟ a: Verder nog?
-e: من لوبیاهای خوب و ظریف، سیر تازه، سه تا خیار به قیمت یک یورو دارم... a: Ik heb mooie, fijne boontjes, verse knoflook, drie komkommers voor één euro... e: من لوبیاهای خوب و ظریف، سیر تازه، سه تا خیار به قیمت یک یورو دارم... a: Ik heb mooie, fijne boontjes, verse knoflook, drie komkommers voor één euro...
-f: نه، همین‌قدر کافی است. b: Nee, zo is het wel genoeg. f: نه، همین‌قدر کافی است. b: Nee, zo is het wel genoeg.
-f: من هفته آینده به تعطیلات می‌روم. b: Ik ga volgende week op vakantie. f: من هفته آینده به تعطیلات می‌روم. b: Ik ga volgende week op vakantie.
-e: اوه، چه عالی. به کجا؟ a: O, lekker. Waarnaartoe? e: اوه، چه عالی. به کجا؟ a: O, lekker. Waarnaartoe?
-f: ونیز. b: Venetië. f: ونیز. b: Venetië.
-e: فوق‌العاده است. a: Prachtig. e: فوق‌العاده است. a: Prachtig.
-e: پس می‌شود هشت و سی. a: Dat is dan acht dertig. e: پس می‌شود هشت و سی. a: Dat is dan acht dertig.
-e: آیا سی سنت خرده همراهت داری؟ a: Heb je er dertig cent bij? e: آیا سی سنت خرده همراهت داری؟ a: Heb je er dertig cent bij?
-f: نه، متأسفم. b: Nee, sorry. f: نه، متأسفم. b: Nee, sorry.
-e: اشکالی ندارد. a: Geeft niet. e: اشکالی ندارد. a: Geeft niet.
-e: هشت و پنجاه، نه و این هم ده. a: Acht vijftig, negen en dat is tien. e: هشت و پنجاه، نه و این هم ده. a: Acht vijftig, negen en dat is tien.
-e: خب، تعطیلات خوش بگذرد! a: Nou, prettige vakantie! e: خب، تعطیلات خوش بگذرد! a: Nou, prettige vakantie!
-f: خیلی ممنون. b: Dank je wel. f: خیلی ممنون. b: Dank je wel.
-f: آخر هفته خوبی داشته باشید. b: Prettig weekend. f: آخر هفته خوبی داشته باشید. b: Prettig weekend.
-f: خداحافظ! b: Dag! f: خداحافظ! b: Dag!
+# Hoofdstuk 9 — Perfectum met zijn (richting, gebeuren, zijn, worden, blijven, stoppen, beginnen)
+a: Ik fiets naar huis. b: Ik ben naar huis gefietst. e: با دوچرخه به خانه رفتم.
+a: Ik ga naar de makelaar. b: Ik ben naar de makelaar gegaan. e: پیش دلال املاک رفتم.
+a: Dorien en Marianne gaan met de fiets naar huis. b: Dorien en Marianne zijn met de fiets naar huis gegaan. e: دورین و ماریان با دوچرخه به خانه رفتند.
+a: We gaan met de fiets. b: We zijn met de fiets gegaan. e: با دوچرخه رفتیم.
+a: Ga je zaterdag of zondag naar Amsterdam? b: Ben je zaterdag of zondag naar Amsterdam gegaan? e: شنبه یا یکشنبه به آمستردام رفتی؟
+a: Hoe laat ga je naar huis? b: Hoe laat ben je gisteren naar huis gegaan? e: دیروز ساعت چند به خانه رفتی؟
+a: Sebastian en ik gaan om elf uur naar de makelaar. b: Sebastian en ik zijn om elf uur naar de makelaar gegaan. e: من و سباستین ساعت یازده پیش دلال املاک رفتیم.
+a: Gaan jullie met Simona naar de dokter? b: Zijn jullie met Simona naar de dokter gegaan? e: شما با سیمونا پیش دکتر رفتید؟
+a: Wat gebeurt er? b: Wat is er gebeurd? e: چه اتفاقی افتاده؟
+a: Vanavond ben ik bij de voetbalvereniging. b: Gisteravond ben ik naar de voetbalvereniging geweest. e: دیشب به باشگاه فوتبال رفته بودم.
+a: Julia en Martin zijn in België op vakantie. b: Julia en Martin zijn in België op vakantie geweest. e: جولیا و مارتین در بلژیک در تعطیلات بوده‌اند.
+a: Waar ben je op vakantie? b: Waar ben je dit jaar op vakantie geweest? e: امسال کجا به تعطیلات رفتی؟
+a: Joana is op vakantie in Portugal. b: Joana is dit jaar op vakantie in Portugal geweest. e: یوانا امسال در پرتغال در تعطیلات بوده است.
+a: Ik ben in het weekend ziek. b: Ik ben in het weekend ziek geweest. e: آخر هفته مریض بودم.
+a: Word je vandaag eenentwintig? b: Ben je gisteren eenentwintig geworden? e: دیروز بیست‌ویک ساله شدی؟
+a: Brian wordt vandaag zesendertig. b: Brian is gisteren zesendertig geworden. e: برایان دیروز سی‌وشش ساله شد.
+a: Hij blijft tot tweeëntwintig uur. b: Hij is tot tweeëntwintig uur gebleven. e: او تا ساعت بیست‌ودو ماند.
+a: Mijn vriend blijft vandaag thuis. b: Mijn vriend is gisteren thuis gebleven. e: دوستم دیروز در خانه ماند.
+a: Ik blijf in het weekend thuis. b: Ik ben in het weekend thuis gebleven. e: آخر هفته در خانه ماندم.
+a: Ze stopt met de cursus. b: Ze is met de cursus gestopt. e: او دوره را رها کرد.
+a: Stop je met de cursus Nederlands? b: Ben je met de cursus Nederlands gestopt? e: دوره‌ی هلندی را رها کردی؟
+a: Veronika en Victor stoppen met de cursus. b: Veronika en Victor zijn met de cursus gestopt. e: ورونیکا و ویکتور دوره را رها کردند.
+a: We beginnen om negen uur met de cursus. b: We zijn om negen uur met de cursus begonnen. e: ساعت نه دوره را شروع کردیم.
+a: We beginnen vandaag met les negen. b: We zijn vandaag met les negen begonnen. e: امروز درس نه را شروع کردیم.
+a: Wanneer begint de cursus? b: Wanneer is de cursus begonnen? e: دوره کی شروع شد؟
+a: Hoe laat beginnen jullie met de les? b: Hoe laat zijn jullie met de les begonnen? e: ساعت چند درس را شروع کردید؟
+a: Wanneer begint dat? b: Wanneer is dat begonnen? e: کی شروع شد؟
+a: Wanneer kom je naar Nederland? b: Wanneer ben je naar Nederland gekomen? e: کی به هلند آمدی؟
+a: Hoe komt Karen naar de les? b: Hoe is Karen naar de les gekomen? e: کارن چطور به کلاس آمد؟
+a: Komt u met de bus? b: Bent u met de bus gekomen? e: با اتوبوس آمده‌اید؟
+a: Wij komen naar Nederland. b: Wij zijn een halfjaar geleden naar Nederland gekomen. e: ما شش ماه پیش به هلند آمدیم.
+
 """.strip()
 
 
