@@ -34,3 +34,8 @@ CLAUDE.md
 
 chapter_outputs/
 
+# PyInstaller (local test builds of the Windows exe)
+_exe_build/
+build/
+dist/
+*.spec

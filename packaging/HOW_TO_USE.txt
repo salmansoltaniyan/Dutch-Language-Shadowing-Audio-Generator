@@ -1,0 +1,37 @@
+Shadowing lesson builder
+========================
+
+Turns a text lesson into an MP3 for shadowing practice: every line is spoken by a voice, followed by a pause
+in which you repeat it out loud. Nothing to install: everything the program needs is in this folder.
+
+Start
+-----
+1. Unzip the whole folder (do not run the program from inside the zip).
+2. Double-click ShadowingApp.exe.
+   The first time Windows may show "Windows protected your PC": click "More info", then "Run anyway".
+   (The program is not signed with a paid certificate.)
+
+Make a lesson
+-------------
+1. The two boxes already contain a small example. Press "Build lesson" to hear how it works.
+2. Lesson box: one line = one exercise. Every piece starts with a speaker tag, e.g.
+       a: Ik herinner me haar naam. e: اسمش یادم می‌آید.
+   Lines starting with # are skipped. Type, paste, or use "Load from file…".
+3. Speakers box: which voice, language, speed, repeats and pause belong to each tag:
+       "a": {"language": "dutch", "voice": "male1", "repeats": 1, "speed": 0.8, "silence_ratio": 1.0},
+   language: dutch, english, german, persian     voice: male1, male2, female1, female2
+   silence_ratio: pause after the piece = its length x this number (at least 1 second).
+4. Choose a name and an engine and press "Build lesson".
+   The MP3 (and a .json file with the time of every piece) is saved in the "output" folder next to
+   ShadowingApp.exe; "Open output folder" opens it. Lessons longer than 30 minutes are saved in parts.
+
+Engines
+-------
+- Edge-TTS: free, no key needed, needs an internet connection.
+- Google Chirp 3 HD: the most natural Dutch voices; needs a Google Cloud API key with the
+  Cloud Text-to-Speech API enabled (Google bills per character after a free monthly amount).
+  Paste the key in the "Google API key" box. Tick "Remember" to keep it for next time
+  (it is saved in %APPDATA%\ShadowingApp\settings.json, not in this folder).
+
+More information: https://github.com/salmansoltaniyan/Dutch-Language-Shadowing-Audio-Generator
+This folder contains FFmpeg (https://ffmpeg.org), licensed under the LGPL: see FFmpeg-LICENSE.txt.

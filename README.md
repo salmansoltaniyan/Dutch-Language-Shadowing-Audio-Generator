@@ -23,6 +23,24 @@ engine is different.
 
 Start with Edge-TTS to try things out; use Google when you want the best Dutch voices.
 
+## Windows program (no Python needed)
+
+Download `ShadowingApp-windows.zip` from the
+[Releases page](https://github.com/salmansoltaniyan/Dutch-Language-Shadowing-Audio-Generator/releases),
+unzip it and double-click `ShadowingApp.exe`. A window opens with two boxes (lesson and speakers, filled with
+a small example), the engine choice, a box for the Google API key and a Build button. FFmpeg is included.
+Windows may say "Windows protected your PC" the first time: click *More info* → *Run anyway*.
+`HOW_TO_USE.txt` in the zip explains the rest.
+
+The same window also runs from source: `python src/shadowing_gui.py`.
+
+### How the exe is made
+`.github/workflows/build-exe.yml` builds it on GitHub with PyInstaller, adds FFmpeg (LGPL build), builds the
+example lesson with the exe as a test (`ShadowingApp.exe --selftest`) and zips it.
+- Push a tag to publish a release: `git tag v1.0` then `git push origin v1.0`.
+- Or run the workflow by hand (Actions → Build Windows exe → Run workflow); the zip is then under the run's
+  *Artifacts*.
+
 ## Installation
 
 1. Python 3.9 or newer.
