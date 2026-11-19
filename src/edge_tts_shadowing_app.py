@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import asyncio
@@ -29,7 +30,7 @@ OUTPUT_DIR = BASE_DIR / "output"
 
 # Adaptive silence: pause after each play = segment_duration × SILENCE_RATIO
 # This is the default; any speaker can override it with its own 'silence_ratio' in SPEAKERS.
-SILENCE_RATIO  = 0.9
+SILENCE_RATIO  = 1.6   # same default as google_shadowing_app.py
 MIN_SILENCE_MS = 1000   # minimum pause in milliseconds
 
 # Final MP3 output settings (normalized for universal player compatibility)
@@ -281,12 +282,14 @@ def parse_speed_to_rate_str(speed: float | int | str = 1.0) -> str:
 
 async def make_audio(
     text: str,
+    language: str,
     voice: str,
     filepath: Path,
     speed: float | int | str = 1.0,
     max_retries: int = 3,
 ) -> None:
-    """Synthesize text to speech using Microsoft Edge-TTS with retry mechanism."""
+    """Synthesize text to speech using Microsoft Edge-TTS with retry mechanism.
+    'language' is not needed by Edge-TTS; it is here so the call is the same as in google_shadowing_app.py."""
     rate_str = parse_speed_to_rate_str(speed)
 
     for attempt in range(1, max_retries + 1):
@@ -418,7 +421,7 @@ async def build_lesson() -> None:
                 chunk_file = tmp_dir / f"r{row_idx:03d}_s{seg_idx}_{tag}_{clean_name}{speed_tag}.mp3"
 
                 if not (chunk_file.exists() and chunk_file.stat().st_size > 0):
-                    await make_audio(text, voice, chunk_file, speed=speed_val)
+                    await make_audio(text, lang, voice, chunk_file, speed=speed_val)
                     await asyncio.sleep(0.1)
                 seg = AudioSegment.from_mp3(str(chunk_file))
                 global_cache[cache_key] = seg
