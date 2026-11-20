@@ -130,15 +130,15 @@ def build(engine: str, lesson_text: str, speakers_text: str, name: str, api_key:
     for row in app.parse_lesson_lines(app.LESSON_DATA):  # unknown tags: stop before anything is synthesized
         for tag, _ in row:
             app.resolve_speaker(tag)
-    # run_lesson.split_export replaces two functions of the app; put them back afterwards, so a second
-    # build in the same window does not wrap them twice
-    originals = app.normalize_and_export, app.adaptive_silence
+    # run_lesson.split_export replaces app.normalize_and_export; put it back afterwards, so a second
+    # build in the same window does not wrap it twice
+    original_export = app.normalize_and_export
     run_lesson.app = app
     try:
         run_lesson.split_export(name)
         asyncio.run(app.build_lesson())
     finally:
-        app.normalize_and_export, app.adaptive_silence = originals
+        app.normalize_and_export = original_export
     return app.OUTPUT_DIR
 
 

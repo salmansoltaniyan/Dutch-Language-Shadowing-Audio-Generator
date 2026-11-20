@@ -74,7 +74,7 @@ python src/google_shadowing_app.py
 
 ### Way 2 (recommended): keep each lesson in its own files
 Put the lesson text in one file and the speakers in another, and run `src/run_lesson.py`. You do not
-have to edit the app, and you get two extra features (long lessons split into parts, timeline JSON; see below).
+have to edit the app, and long lessons are split into parts (see below).
 
 `my_lesson.txt`:
 ```text
@@ -144,17 +144,22 @@ English and German presets are listed in `VOICE_PRESETS` at the top of each app.
 - `CLEANUP_CHUNK_FILES = True` (default) keeps only the final lesson. Set it to `False` in the app to also
   keep one MP3 per row (`001.mp3`, `002.mp3`, …).
 
-Only with `run_lesson.py`:
-- **Long lessons are split.** A lesson longer than 30 minutes is saved as parts of about equal length, cut
-  between two rows: `my_lesson_part1of3_<stamp>.mp3`, … (change `MAX_PART_MINUTES` in `run_lesson.py`).
-- **Timeline JSON.** Next to every MP3 a `.json` file with the same name lists every spoken segment with
-  its start time, end of speech, end of pause, row, tag, language and text. A player app can use it to show
-  the text that is being spoken:
+- **Timeline.** Every lesson MP3 gets a timeline: every spoken segment with its start time, end of speech,
+  end of pause, row, tag, language and text. A player app can use it to show the text that is being spoken.
+  It is saved twice: as a `.json` file with the same name next to the MP3, and inside the MP3 itself as the
+  ID3 tag `TXXX:SHADOWING_TIMELINE` (so the MP3 alone is enough). Both contain the same JSON:
   ```json
   {"audio": "my_lesson_2026-11-19_21-03-01.mp3", "duration": 33.79,
    "segments": [{"start": 0.0, "speech_end": 1.87, "end": 4.12, "row": 1, "tag": "e",
                  "lang": "persian", "text": "یادم می‌آید"}]}
   ```
+  To see the tag inside an MP3: `ffprobe -v error -show_entries format_tags=SHADOWING_TIMELINE -of default=nw=1:nk=1 lesson.mp3`,
+  or open the file in [Mp3tag](https://www.mp3tag.de/en/) → *Extended Tags* (Alt+T).
+
+Only with `run_lesson.py` (and the window app):
+- **Long lessons are split.** A lesson longer than 30 minutes is saved as parts of about equal length, cut
+  between two rows: `my_lesson_part1of3_<stamp>.mp3`, … (change `MAX_PART_MINUTES` in `run_lesson.py`).
+  Every part has its own timeline.
 
 ## Troubleshooting
 

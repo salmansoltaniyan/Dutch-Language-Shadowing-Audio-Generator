@@ -4,7 +4,9 @@ from __future__ import annotations
 import asyncio
 import os
 import re
+import json
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -46,6 +48,13 @@ OUTPUT_NAME = "full_lesson_edge"
 # True  = Keep ONLY the complete final lesson file, delete all chunks.
 # False = Keep all individual row files (001.mp3, 002.mp3, ...) for separate playback.
 CLEANUP_CHUNK_FILES = True
+
+# Timeline: next to the final MP3 a JSON file with the same name lists every spoken segment (start, end of
+# speech, end of pause, row, tag, language, text). The same JSON is also stored inside the MP3 as the ID3 tag
+# TXXX:SHADOWING_TIMELINE, so the MP3 alone is enough for a player that shows the text being spoken.
+TIMELINE_TAG = "SHADOWING_TIMELINE"
+# Filled by build_lesson(): the spoken segments of every row, [(tag, language, text, speech_ms, pause_ms), ...]
+ROW_TIMINGS: list[list[tuple[str, str, str, int, int]]] = []
 
 
 # ===========================================================================
@@ -310,12 +319,46 @@ def adaptive_silence(segment: AudioSegment, ratio: float) -> AudioSegment:
     return AudioSegment.silent(duration=ms)
 
 
-def normalize_and_export(audio: AudioSegment, path: Path) -> None:
-    """Normalize audio settings and export as MP3."""
+def make_timeline(audio_name: str, row_numbers) -> dict:
+    """Timeline of the given rows (0-based indexes into ROW_TIMINGS) for an MP3 that starts with the first of them."""
+    segments, t = [], 0
+    for r in row_numbers:
+        for tag, lang, text, speech_ms, pause_ms in ROW_TIMINGS[r]:
+            segments.append({"start": round(t / 1000, 3), "speech_end": round((t + speech_ms) / 1000, 3),
+                             "end": round((t + speech_ms + pause_ms) / 1000, 3),
+                             "row": r + 1, "tag": tag, "lang": lang, "text": text})
+            t += speech_ms + pause_ms
+    return {"audio": audio_name, "duration": round(t / 1000, 3), "segments": segments}
+
+
+def embed_timeline(path: Path, timeline: dict) -> None:
+    """Store the timeline JSON in the MP3 as the ID3 tag TXXX:SHADOWING_TIMELINE (ffmpeg, no re-encoding).
+    The JSON goes through an ffmetadata file, because a long lesson does not fit on a command line."""
+    text = json.dumps(timeline, ensure_ascii=False, separators=(",", ":"))
+    escaped = re.sub(r"([=;#\\\n])", r"\\\1", text)  # characters with a meaning in ffmetadata get a backslash
+    meta = path.with_name(path.stem + "_meta.txt")
+    tagged = path.with_name(path.stem + "_tagged.mp3")
+    meta.write_text(f";FFMETADATA1\n{TIMELINE_TAG}={escaped}\n", encoding="utf-8")
+    try:
+        subprocess.run([AudioSegment.converter, "-y", "-v", "error", "-i", str(path), "-f", "ffmetadata", "-i", str(meta),
+                        "-map", "0:a", "-map_metadata", "1", "-c", "copy", "-id3v2_version", "4", str(tagged)],
+                       check=True, capture_output=True)
+        os.replace(tagged, path)
+    finally:
+        meta.unlink(missing_ok=True)
+        tagged.unlink(missing_ok=True)
+
+
+def normalize_and_export(audio: AudioSegment, path: Path, timeline: dict | None = None) -> None:
+    """Normalize audio settings and export as MP3. With a timeline: also save it as <name>.json and inside the MP3."""
     if path.exists():
         path.unlink()
     audio = audio.set_frame_rate(OUTPUT_SAMPLE_RATE).set_channels(OUTPUT_CHANNELS)
     audio.export(str(path), format="mp3", bitrate=OUTPUT_BITRATE)
+    if timeline:
+        path.with_suffix(".json").write_text(json.dumps(timeline, ensure_ascii=False, indent=1), encoding="utf-8")
+        embed_timeline(path, timeline)
+        print(f"  Timeline   : {len(timeline['segments'])} segments -> {path.with_suffix('.json').name} (also inside the MP3)")
 
 
 def unique_output_path(directory: Path, name: str) -> Path:
@@ -378,6 +421,7 @@ async def build_lesson() -> None:
 
     # 2. Parse input data
     rows = parse_lesson_lines(LESSON_DATA)
+    ROW_TIMINGS.clear()
     if not rows:
         print("[ERROR] LESSON_DATA is empty or no valid lines were found.")
         return
@@ -405,6 +449,7 @@ async def build_lesson() -> None:
         print(f"\nRow {row_idx}/{len(rows)}: {preview}")
 
         row_audio = AudioSegment.empty()
+        row_timing = []
 
         for seg_idx, (tag, text) in enumerate(segments, start=1):
             lang, voice, repeats, speed = resolve_speaker(tag)
@@ -429,8 +474,10 @@ async def build_lesson() -> None:
             pause = adaptive_silence(seg, speaker_silence_ratio(tag))
             for _ in range(repeats):
                 row_audio += seg + pause
+                row_timing.append((tag, lang, text, len(seg), len(pause)))
 
         all_segments.append(row_audio)
+        ROW_TIMINGS.append(row_timing)
 
         out_path = OUTPUT_DIR / f"{row_idx:03d}.mp3"
         normalize_and_export(row_audio, out_path)
@@ -443,7 +490,7 @@ async def build_lesson() -> None:
     full_lesson = sum(all_segments, AudioSegment.empty())
 
     full_path = unique_output_path(OUTPUT_DIR, OUTPUT_NAME)
-    normalize_and_export(full_lesson, full_path)
+    normalize_and_export(full_lesson, full_path, make_timeline(full_path.name, range(len(rows))))
     total_time = time.time() - start_time
     total_duration_sec = len(full_lesson) / 1000.0
 

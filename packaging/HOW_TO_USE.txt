@@ -22,8 +22,9 @@ Make a lesson
    language: dutch, english, german, persian     voice: male1, male2, female1, female2
    silence_ratio: pause after the piece = its length x this number (at least 1 second).
 4. Choose a name and an engine and press "Build lesson".
-   The MP3 (and a .json file with the time of every piece) is saved in the "output" folder next to
-   ShadowingApp.exe; "Open output folder" opens it. Lessons longer than 30 minutes are saved in parts.
+   The MP3 (and a .json file with the time and text of every piece, which is also stored inside the MP3)
+   is saved in the "output" folder next to ShadowingApp.exe; "Open output folder" opens it.
+   Lessons longer than 30 minutes are saved in parts.
 
 Engines
 -------
