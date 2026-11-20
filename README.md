@@ -160,6 +160,7 @@ English and German presets are listed in `VOICE_PRESETS` at the top of each app.
   ```
   To see the tag inside an MP3: `ffprobe -v error -show_entries format_tags=SHADOWING_TIMELINE -of default=nw=1:nk=1 lesson.mp3`,
   or open the file in [Mp3tag](https://www.mp3tag.de/en/) → *Extended Tags* (Alt+T).
+  For player apps: [docs/TIMELINE_FORMAT.md](docs/TIMELINE_FORMAT.md) (fields, and how to read the tag on Android).
 
 Only with `run_lesson.py` (and the window app):
 - **Long lessons are split.** A lesson longer than 30 minutes is saved as parts of about equal length, cut
