@@ -176,3 +176,13 @@ Only with `run_lesson.py` (and the window app):
 | `Google TTS API Error [403]` | enable the Cloud Text-to-Speech API and billing for the project of the key |
 | `Speaker tag 'x' not found` | the lesson uses a tag that is not in `SPEAKERS` |
 | Edge-TTS fails now and then | it retries 3 times; run again if it still fails (it needs internet) |
+
+## Related projects
+
+Both read the timeline inside the MP3s made here (or the `.json` next to them):
+- [audio-player-with-smartwatch-subtitles](https://github.com/salmansoltaniyan/audio-player-with-smartwatch-subtitles):
+  an Android phone app plus a Wear OS watch app. Use it when you listen on your phone with headphones and want to
+  see the text being spoken (for example the spelling of a new word) on your watch.
+- [Hopopo](https://github.com/Amis883/Hopopo): a phone web app (PWA, works offline, no account). Use it when you want
+  to practise on your phone with a speech check of what you say, or to make shadowing sessions directly from photos,
+  PDFs or text of your own textbook, in any of 21 languages, without this generator.
