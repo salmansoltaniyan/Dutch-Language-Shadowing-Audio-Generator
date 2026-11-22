@@ -181,8 +181,9 @@ Only with `run_lesson.py` (and the window app):
 
 Both read the timeline inside the MP3s made here (or the `.json` next to them):
 - [audio-player-with-smartwatch-subtitles](https://github.com/salmansoltaniyan/audio-player-with-smartwatch-subtitles):
-  an Android phone app plus a Wear OS watch app. Use it when you listen on your phone with headphones and want to
-  see the text being spoken (for example the spelling of a new word) on your watch.
+  an Android phone app plus a Wear OS watch app. Use it when you want to listen to these audio files on an
+  Android phone and see the subtitles (the text being spoken, for example the spelling of a new word) at the same
+  time, on the phone or on your watch.
 - [Hopopo](https://github.com/Amis883/Hopopo): a phone web app (PWA, works offline, no account). Use it when you want
   to practise on your phone with a speech check of what you say, or to make shadowing sessions directly from photos,
   PDFs or text of your own textbook, in any of 21 languages, without this generator.
